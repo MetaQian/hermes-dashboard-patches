@@ -409,7 +409,7 @@ index 54e507d66fb..48a23da8dfb 100644
  
  export interface AgentPluginInstallResponse {
 diff --git a/web/src/pages/PluginsPage.tsx b/web/src/pages/PluginsPage.tsx
-index 8d502f76fa4..9cf413628f0 100644
+index 8d502f76fa4..38b00cd98ed 100644
 --- a/web/src/pages/PluginsPage.tsx
 +++ b/web/src/pages/PluginsPage.tsx
 @@ -1,5 +1,5 @@
@@ -953,7 +953,7 @@ index 8d502f76fa4..9cf413628f0 100644
                    </Button>
                  </div>
                </div>
-@@ -811,76 +902,124 @@ export default function PluginsPage() {
+@@ -811,76 +902,129 @@ export default function PluginsPage() {
            </Card>
          )}
  
@@ -999,18 +999,23 @@ index 8d502f76fa4..9cf413628f0 100644
 +              aria-selected={section === s.id}
 +              onClick={() => setSection(s.id)}
 +              className={cn(
-+                "inline-flex items-center gap-1.5 rounded-xl border px-4 py-2 text-xs font-medium transition-colors",
++                "inline-flex items-center rounded-xl border px-4 py-2 text-xs font-medium transition-colors",
 +                section === s.id
 +                  ? "border-current/40 bg-current/10 text-foreground"
 +                  : "border-border text-text-secondary hover:border-current/30 hover:text-foreground",
 +              )}
 +            >
-+              {s.label}
-+              {typeof s.count === "number" ? (
-+                <span className="tracking-[0.08em] text-text-tertiary normal-case">
-+                  {s.count}
-+                </span>
-+              ) : null}
++              {/* CJK optical centering: Windows 雅黑 glyph ink sits ~1px above
++                  the line-box center, so nudge the text 1px down to look
++                  vertically centered in the button. */}
++              <span className="inline-flex items-center gap-1.5 translate-y-px">
++                {s.label}
++                {typeof s.count === "number" ? (
++                  <span className="tracking-[0.08em] text-text-tertiary normal-case">
++                    {s.count}
++                  </span>
++                ) : null}
++              </span>
 +            </button>
 +          ))}
 +        </div>
@@ -1136,7 +1141,7 @@ index 8d502f76fa4..9cf413628f0 100644
              {t.pluginsPage.catalogHeading ?? "Plugin catalog"}
            </h3>
  
-@@ -890,7 +1029,7 @@ export default function PluginsPage() {
+@@ -890,7 +1034,7 @@ export default function PluginsPage() {
            </p>
  
            <Input
@@ -1145,7 +1150,7 @@ index 8d502f76fa4..9cf413628f0 100644
              placeholder={t.pluginsPage.catalogSearchPlaceholder ?? "Search catalog..."}
              value={catalogSearch}
              onChange={(e) => setCatalogSearch(e.target.value)}
-@@ -915,23 +1054,39 @@ export default function PluginsPage() {
+@@ -915,23 +1059,39 @@ export default function PluginsPage() {
                </a>
              </p>
            ) : (
@@ -1200,7 +1205,7 @@ index 8d502f76fa4..9cf413628f0 100644
  
            <InstalledPluginsHeader pluginCount={rows.length} {...{ loading, loadHub, showToast, t }} />
  
-@@ -947,11 +1102,11 @@ export default function PluginsPage() {
+@@ -947,11 +1107,11 @@ export default function PluginsPage() {
              <p className="text-xs text-text-tertiary">{t.common.noResults}</p>
            ) : (
  
@@ -1214,7 +1219,7 @@ index 8d502f76fa4..9cf413628f0 100644
  
  
                    <PluginRowCard
-@@ -962,18 +1117,19 @@ export default function PluginsPage() {
+@@ -962,18 +1122,19 @@ export default function PluginsPage() {
                ))}
              </ul>
            )}
@@ -1238,7 +1243,7 @@ index 8d502f76fa4..9cf413628f0 100644
  
                {hub!.orphan_dashboard_plugins.map((m) => (
  
-@@ -1032,18 +1188,27 @@ export default function PluginsPage() {
+@@ -1032,18 +1193,27 @@ export default function PluginsPage() {
  }
  
  interface PluginRowCardProps {
@@ -1268,7 +1273,7 @@ index 8d502f76fa4..9cf413628f0 100644
  function PluginRowCard(props: PluginRowCardProps) {
    const {
      row,
-@@ -1052,6 +1217,7 @@ function PluginRowCard(props: PluginRowCardProps) {
+@@ -1052,6 +1222,7 @@ function PluginRowCard(props: PluginRowCardProps) {
      showToast,
      t,
    } = props;
@@ -1276,7 +1281,7 @@ index 8d502f76fa4..9cf413628f0 100644
  
    const dm = row.dashboard_manifest;
  
-@@ -1059,6 +1225,7 @@ function PluginRowCard(props: PluginRowCardProps) {
+@@ -1059,6 +1230,7 @@ function PluginRowCard(props: PluginRowCardProps) {
  
    const busy = rowBusy === row.name;
    const [confirmRemove, setConfirmRemove] = useState(false);
@@ -1284,7 +1289,7 @@ index 8d502f76fa4..9cf413628f0 100644
  
    const badgeTone =
      row.runtime_status === "enabled"
-@@ -1067,202 +1234,219 @@ function PluginRowCard(props: PluginRowCardProps) {
+@@ -1067,202 +1239,219 @@ function PluginRowCard(props: PluginRowCardProps) {
          ? "destructive"
          : "outline";
  
@@ -1433,7 +1438,7 @@ index 8d502f76fa4..9cf413628f0 100644
 +              </p>
              ) : null}
 -          </div>
- 
+-
 -          <div className="flex flex-wrap items-center gap-2 shrink-0">
 -            {row.runtime_status === "enabled" ? (
 -              <Button
@@ -1474,7 +1479,7 @@ index 8d502f76fa4..9cf413628f0 100644
 -                {t.pluginsPage.enableRuntime}
 -              </Button>
 -            )}
--
+ 
 -            {tabPath ? (
 +            <div className="flex flex-col gap-2">
 +              <PluginDetailRow
@@ -1646,7 +1651,7 @@ index 8d502f76fa4..9cf413628f0 100644
          destructive
          confirmLabel={t.common.delete}
        />
-@@ -1286,89 +1470,105 @@ function catalogDocsHref(url: string): string | null {
+@@ -1286,89 +1475,105 @@ function catalogDocsHref(url: string): string | null {
  
  function CatalogEntryCard(props: CatalogEntryCardProps) {
    const { busy, entry, onInstall, removed, t } = props;
@@ -1805,7 +1810,7 @@ index 8d502f76fa4..9cf413628f0 100644
              target="_blank"
              rel="noreferrer"
            >
-@@ -1378,25 +1578,102 @@ function CatalogEntryCard(props: CatalogEntryCardProps) {
+@@ -1378,25 +1583,102 @@ function CatalogEntryCard(props: CatalogEntryCardProps) {
  
            {docsHref ? (
              <a
