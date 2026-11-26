@@ -357,7 +357,7 @@ index 54e507d66fb..48a23da8dfb 100644
  
  export interface AgentPluginInstallResponse {
 diff --git a/web/src/pages/PluginsPage.tsx b/web/src/pages/PluginsPage.tsx
-index 8d502f76fa4..6d8cf2605bf 100644
+index 8d502f76fa4..076e9b5cae5 100644
 --- a/web/src/pages/PluginsPage.tsx
 +++ b/web/src/pages/PluginsPage.tsx
 @@ -1,5 +1,5 @@
@@ -948,7 +948,7 @@ index 8d502f76fa4..6d8cf2605bf 100644
 +            >
 +              {s.label}
 +              {typeof s.count === "number" ? (
-+                <span className="text-[0.6875rem] tracking-[0.08em] text-text-tertiary normal-case">
++                <span className="tracking-[0.08em] text-text-tertiary normal-case">
 +                  {s.count}
 +                </span>
 +              ) : null}
