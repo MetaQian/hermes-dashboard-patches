@@ -357,7 +357,7 @@ index 54e507d66fb..48a23da8dfb 100644
  
  export interface AgentPluginInstallResponse {
 diff --git a/web/src/pages/PluginsPage.tsx b/web/src/pages/PluginsPage.tsx
-index 8d502f76fa4..076e9b5cae5 100644
+index 8d502f76fa4..9cf413628f0 100644
 --- a/web/src/pages/PluginsPage.tsx
 +++ b/web/src/pages/PluginsPage.tsx
 @@ -1,5 +1,5 @@
@@ -383,7 +383,7 @@ index 8d502f76fa4..076e9b5cae5 100644
  import { Input } from "@nous-research/ui/ui/components/input";
  import { Label } from "@nous-research/ui/ui/components/label";
  import { useToast } from "@nous-research/ui/hooks/use-toast";
-@@ -41,12 +49,22 @@ const MEMORY_PROVIDER_BUILTIN = "__hermes_memory_builtin__";
+@@ -41,12 +49,27 @@ const MEMORY_PROVIDER_BUILTIN = "__hermes_memory_builtin__";
  
  type MemoryFormValue = string | boolean | number;
  
@@ -409,10 +409,15 @@ index 8d502f76fa4..076e9b5cae5 100644
 +  if (status === "disabled") return pp.runtimeDisabled ?? "disabled";
 +  return status;
 +}
++
++/** Compact badge styling: the UI-lib Badge defaults (display face, large size, 0.2em
++ * tracking) look oversized and misaligned with CJK labels — tighten it down. */
++const BADGE_CN =
++  "rounded-full px-1.5 py-0.5 font-sans text-[0.625rem] tracking-[0.05em] normal-case";
  
  const MEMORY_STATUS_TONE: Record<MemoryProviderInfo["status"], "success" | "warning" | "destructive" | "secondary"> = {
    ready: "success",
-@@ -83,10 +101,20 @@ function SetupCommandBlock({ code, label }: { code: string; label: string }) {
+@@ -83,10 +106,20 @@ function SetupCommandBlock({ code, label }: { code: string; label: string }) {
    );
  }
  
@@ -437,7 +442,7 @@ index 8d502f76fa4..076e9b5cae5 100644
  }
  
  function setupResultClass(status: string) {
-@@ -99,11 +127,12 @@ function setupResultClass(status: string) {
+@@ -99,11 +132,12 @@ function setupResultClass(status: string) {
  }
  
  function MemoryProviderSetupResults({ results }: { results: MemoryProviderSetupResult[] }) {
@@ -451,7 +456,7 @@ index 8d502f76fa4..076e9b5cae5 100644
        {results.map((result, index) => {
          const detail = result.stderr || result.stdout;
          return (
-@@ -115,7 +144,7 @@ function MemoryProviderSetupResults({ results }: { results: MemoryProviderSetupR
+@@ -115,7 +149,7 @@ function MemoryProviderSetupResults({ results }: { results: MemoryProviderSetupR
                    setupResultClass(result.status),
                  )}
                >
@@ -460,7 +465,7 @@ index 8d502f76fa4..076e9b5cae5 100644
                </span>
                <span className="text-muted-foreground">
                  {result.name}
-@@ -150,6 +179,8 @@ function MemoryProviderSetupHint({
+@@ -150,6 +184,8 @@ function MemoryProviderSetupHint({
    provider: MemoryProviderInfo;
    results: MemoryProviderSetupResult[] | null;
  }) {
@@ -469,7 +474,7 @@ index 8d502f76fa4..076e9b5cae5 100644
    const setup = provider.setup;
    const hasDetails = setupHasDetails(setup);
    const hasInstallableSteps = setupHasInstallableSteps(setup);
-@@ -167,7 +198,8 @@ function MemoryProviderSetupHint({
+@@ -167,7 +203,8 @@ function MemoryProviderSetupHint({
    if (!hasDetails || !setup) {
      return (
        <p className="border border-destructive/50 px-3 py-2 text-xs text-destructive">
@@ -479,7 +484,7 @@ index 8d502f76fa4..076e9b5cae5 100644
        </p>
      );
    }
-@@ -181,27 +213,29 @@ function MemoryProviderSetupHint({
+@@ -181,27 +218,29 @@ function MemoryProviderSetupHint({
      >
        <p className={isBlocked ? "text-destructive" : "text-muted-foreground"}>
          {needsDependencySetup
@@ -514,7 +519,7 @@ index 8d502f76fa4..076e9b5cae5 100644
          </div>
        ) : null}
  
-@@ -212,17 +246,21 @@ function MemoryProviderSetupHint({
+@@ -212,17 +251,21 @@ function MemoryProviderSetupHint({
            {setup.external_dependencies.map((dep, index) => (
              <div key={`${dep.name || "dependency"}-${index}`} className="grid gap-2">
                <p className="text-muted-foreground">
@@ -539,7 +544,7 @@ index 8d502f76fa4..076e9b5cae5 100644
                    code={dep.check}
                  />
                ) : null}
-@@ -231,7 +269,7 @@ function MemoryProviderSetupHint({
+@@ -231,7 +274,7 @@ function MemoryProviderSetupHint({
  
            {setup.pip_dependencies.length ? (
              <div className="grid gap-2">
@@ -548,7 +553,7 @@ index 8d502f76fa4..076e9b5cae5 100644
                <div className="flex flex-wrap gap-2">
                  {setup.pip_dependencies.map((dep) => (
                    <code
-@@ -250,7 +288,8 @@ function MemoryProviderSetupHint({
+@@ -250,7 +293,8 @@ function MemoryProviderSetupHint({
        {setup.required_env.length && needsDependencySetup ? (
          <div className="grid gap-2">
            <p className="text-muted-foreground">
@@ -558,7 +563,7 @@ index 8d502f76fa4..076e9b5cae5 100644
            </p>
            <div className="flex flex-wrap gap-2">
              {setup.required_env.map((envKey) => (
-@@ -274,12 +313,15 @@ export default function PluginsPage() {
+@@ -274,12 +318,15 @@ export default function PluginsPage() {
    const [catalog, setCatalog] = useState<CatalogResponse | null>(null);
    const [catalogLoading, setCatalogLoading] = useState(true);
    const [catalogSearch, setCatalogSearch] = useState("");
@@ -574,7 +579,7 @@ index 8d502f76fa4..076e9b5cae5 100644
    const [rescanBusy, setRescanBusy] = useState(false);
    const [memorySel, setMemorySel] = useState(MEMORY_PROVIDER_BUILTIN);
    const [memoryConfig, setMemoryConfig] = useState<MemoryProviderConfig | null>(null);
-@@ -355,7 +397,7 @@ export default function PluginsPage() {
+@@ -355,7 +402,7 @@ export default function PluginsPage() {
            if (!cancelled) {
              setMemoryConfig(null);
              setMemoryValues({});
@@ -583,7 +588,7 @@ index 8d502f76fa4..076e9b5cae5 100644
            }
          })
          .finally(() => {
-@@ -380,15 +422,21 @@ export default function PluginsPage() {
+@@ -380,15 +427,21 @@ export default function PluginsPage() {
          identifier: id,
          force: installForce,
          enable: installEnable,
@@ -607,7 +612,7 @@ index 8d502f76fa4..076e9b5cae5 100644
      } finally {
        setInstallBusy(false);
      }
-@@ -404,12 +452,16 @@ export default function PluginsPage() {
+@@ -404,12 +457,16 @@ export default function PluginsPage() {
          force: entry.installed,
          enable: false,
        });
@@ -626,7 +631,7 @@ index 8d502f76fa4..076e9b5cae5 100644
      } finally {
        setCatalogBusy(null);
      }
-@@ -425,7 +477,7 @@ export default function PluginsPage() {
+@@ -425,7 +482,7 @@ export default function PluginsPage() {
        );
        await loadHub();
      } catch (e) {
@@ -635,7 +640,7 @@ index 8d502f76fa4..076e9b5cae5 100644
      } finally {
        setRescanBusy(false);
      }
-@@ -465,7 +517,7 @@ export default function PluginsPage() {
+@@ -465,7 +522,7 @@ export default function PluginsPage() {
        showToast(t.pluginsPage.savedProviders, "success");
        await loadHub();
      } catch (e) {
@@ -644,7 +649,7 @@ index 8d502f76fa4..076e9b5cae5 100644
      } finally {
        setMemoryBusy(false);
      }
-@@ -491,13 +543,18 @@ export default function PluginsPage() {
+@@ -491,13 +548,18 @@ export default function PluginsPage() {
        const failed = result.results.filter((row) => row.status === "failed");
        if (failed.length) {
          const names = Array.from(new Set(failed.map((row) => row.name))).join(", ");
@@ -666,7 +671,7 @@ index 8d502f76fa4..076e9b5cae5 100644
      } finally {
        setMemorySetupBusy(false);
      }
-@@ -510,7 +567,7 @@ export default function PluginsPage() {
+@@ -510,7 +572,7 @@ export default function PluginsPage() {
        showToast(t.pluginsPage.savedProviders, "success");
        await loadHub();
      } catch (e) {
@@ -675,7 +680,7 @@ index 8d502f76fa4..076e9b5cae5 100644
      } finally {
        setContextBusy(false);
      }
-@@ -522,7 +579,7 @@ export default function PluginsPage() {
+@@ -522,7 +584,7 @@ export default function PluginsPage() {
        await fn();
        await loadHub();
      } catch (e) {
@@ -684,7 +689,7 @@ index 8d502f76fa4..076e9b5cae5 100644
      } finally {
        setRowBusy(null);
      }
-@@ -561,18 +618,40 @@ export default function PluginsPage() {
+@@ -561,18 +623,40 @@ export default function PluginsPage() {
    const visibleMemoryFields =
      memoryConfig?.fields.filter((field) => fieldIsVisible(field, memoryValues)) ?? [];
  
@@ -728,21 +733,23 @@ index 8d502f76fa4..076e9b5cae5 100644
                </p>
              </CardHeader>
  
-@@ -584,25 +663,25 @@ export default function PluginsPage() {
+@@ -583,26 +667,26 @@ export default function PluginsPage() {
+                     <div className="flex flex-wrap items-center gap-2">
                        <Label htmlFor="mem-provider">{t.pluginsPage.memoryProviderLabel}</Label>
                        {selectedMemoryName && selectedMemoryInfo && (
-                         <Badge tone={MEMORY_STATUS_TONE[selectedMemoryInfo.status]}>
+-                        <Badge tone={MEMORY_STATUS_TONE[selectedMemoryInfo.status]}>
 -                          {MEMORY_STATUS_LABEL[selectedMemoryInfo.status]}
++                        <Badge tone={MEMORY_STATUS_TONE[selectedMemoryInfo.status]} className={BADGE_CN}>
 +                          {memoryStatusLabel(selectedMemoryInfo.status, t)}
                          </Badge>
                        )}
                        {selectedMemoryName && selectedMemoryName === providers.memory_provider && (
 -                        <Badge tone="outline">active</Badge>
-+                        <Badge tone="outline">{t.pluginsPage.statusActive ?? "active"}</Badge>
++                        <Badge tone="outline" className={BADGE_CN}>{t.pluginsPage.statusActive ?? "active"}</Badge>
                        )}
                        {!selectedMemoryName && !providers.memory_provider && (
 -                        <Badge tone="success">active</Badge>
-+                        <Badge tone="success">{t.pluginsPage.statusActive ?? "active"}</Badge>
++                        <Badge tone="success" className={BADGE_CN}>{t.pluginsPage.statusActive ?? "active"}</Badge>
                        )}
                      </div>
  
@@ -759,7 +766,7 @@ index 8d502f76fa4..076e9b5cae5 100644
                        </SelectOption>
  
                        {providers.memory_options.map((o) => (
-@@ -615,13 +694,16 @@ export default function PluginsPage() {
+@@ -615,13 +699,16 @@ export default function PluginsPage() {
  
                    {!selectedMemoryName && (
                      <p className="text-xs text-muted-foreground">
@@ -778,7 +785,7 @@ index 8d502f76fa4..076e9b5cae5 100644
                      </p>
                    )}
  
-@@ -642,19 +724,21 @@ export default function PluginsPage() {
+@@ -642,19 +729,21 @@ export default function PluginsPage() {
  
                    {selectedMemoryName && selectedMemoryInfo?.status === "needs_config" && (
                      <p className="border border-warning/50 px-3 py-2 text-xs text-warning">
@@ -803,19 +810,19 @@ index 8d502f76fa4..076e9b5cae5 100644
                      </p>
                    )}
  
-@@ -667,9 +751,9 @@ export default function PluginsPage() {
+@@ -667,9 +756,9 @@ export default function PluginsPage() {
                            <div key={field.key} className="grid gap-2 min-w-0">
                              <div className="flex flex-wrap items-center gap-2">
                                <Label htmlFor={`memory-${field.key}`}>{field.label}</Label>
 -                              {field.required && <Badge tone="outline">required</Badge>}
-+                              {field.required && <Badge tone="outline">{t.pluginsPage.fieldRequired ?? "required"}</Badge>}
++                              {field.required && <Badge tone="outline" className={BADGE_CN}>{t.pluginsPage.fieldRequired ?? "required"}</Badge>}
                                {field.kind === "secret" && field.is_set && !value && (
 -                                <Badge tone="success">set</Badge>
-+                                <Badge tone="success">{t.pluginsPage.fieldSet ?? "set"}</Badge>
++                                <Badge tone="success" className={BADGE_CN}>{t.pluginsPage.fieldSet ?? "set"}</Badge>
                                )}
                                {field.url && (
                                  <a
-@@ -678,7 +762,7 @@ export default function PluginsPage() {
+@@ -678,7 +767,7 @@ export default function PluginsPage() {
                                    rel="noreferrer"
                                    className="inline-flex items-center gap-1 text-xs underline"
                                  >
@@ -824,7 +831,7 @@ index 8d502f76fa4..076e9b5cae5 100644
                                  </a>
                                )}
                              </div>
-@@ -686,7 +770,7 @@ export default function PluginsPage() {
+@@ -686,7 +775,7 @@ export default function PluginsPage() {
                              {field.kind === "select" ? (
                                <Select
                                  id={`memory-${field.key}`}
@@ -833,7 +840,7 @@ index 8d502f76fa4..076e9b5cae5 100644
                                  value={String(value ?? "")}
                                  onValueChange={(next) =>
                                    setMemoryValues((current) => ({ ...current, [field.key]: next }))
-@@ -724,7 +808,7 @@ export default function PluginsPage() {
+@@ -724,7 +813,7 @@ export default function PluginsPage() {
                                    value={String(value ?? "")}
                                    placeholder={
                                      field.kind === "secret" && field.is_set
@@ -842,7 +849,7 @@ index 8d502f76fa4..076e9b5cae5 100644
                                        : field.placeholder
                                    }
                                    onChange={(event) =>
-@@ -738,7 +822,9 @@ export default function PluginsPage() {
+@@ -738,7 +827,9 @@ export default function PluginsPage() {
                                    <Button
                                      ghost
                                      size="icon"
@@ -853,7 +860,7 @@ index 8d502f76fa4..076e9b5cae5 100644
                                      onClick={() =>
                                        setSecretVisible((current) => ({
                                          ...current,
-@@ -766,13 +852,13 @@ export default function PluginsPage() {
+@@ -766,13 +857,13 @@ export default function PluginsPage() {
                    )}
  
                    <Button
@@ -869,7 +876,7 @@ index 8d502f76fa4..076e9b5cae5 100644
                    </Button>
                  </div>
  
-@@ -781,7 +867,7 @@ export default function PluginsPage() {
+@@ -781,7 +872,7 @@ export default function PluginsPage() {
  
                    <Select
                      id="ctx-engine"
@@ -878,7 +885,7 @@ index 8d502f76fa4..076e9b5cae5 100644
                      value={contextSel}
                      onValueChange={setContextSel}
                    >
-@@ -797,13 +883,13 @@ export default function PluginsPage() {
+@@ -797,13 +888,13 @@ export default function PluginsPage() {
                    </Select>
  
                    <Button
@@ -894,7 +901,7 @@ index 8d502f76fa4..076e9b5cae5 100644
                    </Button>
                  </div>
                </div>
-@@ -811,76 +897,124 @@ export default function PluginsPage() {
+@@ -811,76 +902,124 @@ export default function PluginsPage() {
            </Card>
          )}
  
@@ -1077,7 +1084,7 @@ index 8d502f76fa4..076e9b5cae5 100644
              {t.pluginsPage.catalogHeading ?? "Plugin catalog"}
            </h3>
  
-@@ -890,7 +1024,7 @@ export default function PluginsPage() {
+@@ -890,7 +1029,7 @@ export default function PluginsPage() {
            </p>
  
            <Input
@@ -1086,7 +1093,7 @@ index 8d502f76fa4..076e9b5cae5 100644
              placeholder={t.pluginsPage.catalogSearchPlaceholder ?? "Search catalog..."}
              value={catalogSearch}
              onChange={(e) => setCatalogSearch(e.target.value)}
-@@ -915,23 +1049,39 @@ export default function PluginsPage() {
+@@ -915,23 +1054,39 @@ export default function PluginsPage() {
                </a>
              </p>
            ) : (
@@ -1141,7 +1148,7 @@ index 8d502f76fa4..076e9b5cae5 100644
  
            <InstalledPluginsHeader pluginCount={rows.length} {...{ loading, loadHub, showToast, t }} />
  
-@@ -947,11 +1097,11 @@ export default function PluginsPage() {
+@@ -947,11 +1102,11 @@ export default function PluginsPage() {
              <p className="text-xs text-text-tertiary">{t.common.noResults}</p>
            ) : (
  
@@ -1155,7 +1162,7 @@ index 8d502f76fa4..076e9b5cae5 100644
  
  
                    <PluginRowCard
-@@ -962,18 +1112,19 @@ export default function PluginsPage() {
+@@ -962,18 +1117,19 @@ export default function PluginsPage() {
                ))}
              </ul>
            )}
@@ -1179,7 +1186,7 @@ index 8d502f76fa4..076e9b5cae5 100644
  
                {hub!.orphan_dashboard_plugins.map((m) => (
  
-@@ -1032,18 +1183,27 @@ export default function PluginsPage() {
+@@ -1032,18 +1188,27 @@ export default function PluginsPage() {
  }
  
  interface PluginRowCardProps {
@@ -1209,7 +1216,7 @@ index 8d502f76fa4..076e9b5cae5 100644
  function PluginRowCard(props: PluginRowCardProps) {
    const {
      row,
-@@ -1052,6 +1212,7 @@ function PluginRowCard(props: PluginRowCardProps) {
+@@ -1052,6 +1217,7 @@ function PluginRowCard(props: PluginRowCardProps) {
      showToast,
      t,
    } = props;
@@ -1217,7 +1224,7 @@ index 8d502f76fa4..076e9b5cae5 100644
  
    const dm = row.dashboard_manifest;
  
-@@ -1059,6 +1220,7 @@ function PluginRowCard(props: PluginRowCardProps) {
+@@ -1059,6 +1225,7 @@ function PluginRowCard(props: PluginRowCardProps) {
  
    const busy = rowBusy === row.name;
    const [confirmRemove, setConfirmRemove] = useState(false);
@@ -1225,7 +1232,7 @@ index 8d502f76fa4..076e9b5cae5 100644
  
    const badgeTone =
      row.runtime_status === "enabled"
-@@ -1067,202 +1229,219 @@ function PluginRowCard(props: PluginRowCardProps) {
+@@ -1067,202 +1234,219 @@ function PluginRowCard(props: PluginRowCardProps) {
          ? "destructive"
          : "outline";
  
@@ -1295,7 +1302,7 @@ index 8d502f76fa4..076e9b5cae5 100644
 +              v{row.version || "—"} · {row.source}
 +            </p>
 +          </div>
-+          <Badge tone={badgeTone} className="shrink-0 rounded-full">
++          <Badge tone={badgeTone} className={cn(BADGE_CN, "shrink-0")}>
 +            {runtimeStatusLabel(row.runtime_status, t)}
 +          </Badge>
 +        </div>
@@ -1587,7 +1594,7 @@ index 8d502f76fa4..076e9b5cae5 100644
          destructive
          confirmLabel={t.common.delete}
        />
-@@ -1286,89 +1465,105 @@ function catalogDocsHref(url: string): string | null {
+@@ -1286,89 +1470,105 @@ function catalogDocsHref(url: string): string | null {
  
  function CatalogEntryCard(props: CatalogEntryCardProps) {
    const { busy, entry, onInstall, removed, t } = props;
@@ -1617,7 +1624,7 @@ index 8d502f76fa4..076e9b5cae5 100644
 +    "rounded-md border border-border bg-background/40 px-2 py-1 font-mono text-[0.6875rem]";
 +
 +  const installButton = isRemoved ? null : entry.installed && !entry.update_available ? (
-+    <Badge tone="success" className="rounded-full">
++    <Badge tone="success" className={BADGE_CN}>
 +      {pp.catalogInstalledBadge ?? "Installed ✓"}
 +    </Badge>
 +  ) : (
@@ -1653,7 +1660,7 @@ index 8d502f76fa4..076e9b5cae5 100644
 +          <div className="flex shrink-0 items-center gap-1.5">
 +            <Badge
 +              tone={entry.tier === "community" ? "secondary" : "success"}
-+              className="rounded-full"
++              className={BADGE_CN}
 +            >
 +              {entry.tier === "community"
 +                ? (pp.tierCommunity ?? "community")
@@ -1667,7 +1674,7 @@ index 8d502f76fa4..076e9b5cae5 100644
              {isRemoved ? (
 -              <Badge tone="destructive">
 -                {t.pluginsPage.catalogRemovedBadge ?? "Removed"}
-+              <Badge tone="destructive" className="rounded-full">
++              <Badge tone="destructive" className={BADGE_CN}>
 +                {pp.catalogRemovedBadge ?? "Removed"}
                </Badge>
 -            ) : null}
@@ -1678,7 +1685,7 @@ index 8d502f76fa4..076e9b5cae5 100644
 -              <Badge tone="success">
 -                {t.pluginsPage.catalogInstalledBadge ?? "Installed ✓"}
 +            ) : entry.installed && entry.runtime_status ? (
-+              <Badge tone="outline" className="rounded-full">
++              <Badge tone="outline" className={BADGE_CN}>
 +                {runtimeStatusLabel(entry.runtime_status, t)}
                </Badge>
 -            ) : (
@@ -1746,7 +1753,7 @@ index 8d502f76fa4..076e9b5cae5 100644
              target="_blank"
              rel="noreferrer"
            >
-@@ -1378,25 +1573,102 @@ function CatalogEntryCard(props: CatalogEntryCardProps) {
+@@ -1378,25 +1578,102 @@ function CatalogEntryCard(props: CatalogEntryCardProps) {
  
            {docsHref ? (
              <a
