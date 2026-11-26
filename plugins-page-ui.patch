@@ -328,10 +328,10 @@ index 104612bcaf5..a181b7df8fb 100644
  
    skills: {
 diff --git a/web/src/index.css b/web/src/index.css
-index 7c4f39f9d40..5cb36174fad 100644
+index 7c4f39f9d40..43a8848aa43 100644
 --- a/web/src/index.css
 +++ b/web/src/index.css
-@@ -271,3 +271,51 @@ html[dir="rtl"] {
+@@ -271,3 +271,63 @@ html[dir="rtl"] {
    direction: rtl;
  }
  
@@ -381,6 +381,18 @@ index 7c4f39f9d40..5cb36174fad 100644
 +}
 +[data-plugins-page] .plugins-select [role="listbox"] [role="option"] {
 +  color: var(--midground);
++}
++
++/* Plugins page: Label. The UI-lib Label hardcodes font-mondwest (display face,
++   uppercase) + leading-none; that short line box makes labels sitting next to
++   switches (e.g. 自动更新) render ~4px above the track center, and the face is
++   unclear at 12px. Use the theme's standard font with a normal line-height so
++   the text centers on the switch (and matches the body copy). */
++[data-plugins-page] label {
++  font-family: var(--theme-font-sans);
++  text-transform: none;
++  letter-spacing: normal;
++  line-height: 1.5;
 +}
 +
 diff --git a/web/src/lib/api.ts b/web/src/lib/api.ts
@@ -1905,3 +1917,16 @@ index 8d502f76fa4..9cf413628f0 100644
      </Card>
    );
  }
+diff --git a/web/src/pages/PluginsPage_updateAll.tsx b/web/src/pages/PluginsPage_updateAll.tsx
+index 4a846a03fdb..5445e5302d2 100644
+--- a/web/src/pages/PluginsPage_updateAll.tsx
++++ b/web/src/pages/PluginsPage_updateAll.tsx
+@@ -81,7 +81,7 @@ function PluginAutoUpdateSwitch({ showToast, t }: PluginAutoUpdateSwitchProps) {
+         onCheckedChange={(v) => void onChange(v)}
+       />
+       <div className="flex flex-col gap-1">
+-        <Label>{t.pluginsPage.autoUpdate}</Label>
++        <Label className="flex h-5 items-center">{t.pluginsPage.autoUpdate}</Label>
+         <p className="text-xs text-text-tertiary">{t.pluginsPage.autoUpdateDesc(state.check_hours)}</p>
+       </div>
+     </div>
