@@ -328,10 +328,10 @@ index 104612bcaf5..a181b7df8fb 100644
  
    skills: {
 diff --git a/web/src/index.css b/web/src/index.css
-index 7c4f39f9d40..2abc376c1f3 100644
+index 7c4f39f9d40..5cb36174fad 100644
 --- a/web/src/index.css
 +++ b/web/src/index.css
-@@ -271,3 +271,30 @@ html[dir="rtl"] {
+@@ -271,3 +271,51 @@ html[dir="rtl"] {
    direction: rtl;
  }
  
@@ -360,6 +360,27 @@ index 7c4f39f9d40..2abc376c1f3 100644
 +}
 +[data-plugins-page] button[role="switch"][aria-checked="true"] > span {
 +  background-color: var(--color-success);
++}
++
++/* Plugins page: Select (dropdown). The UI-lib Select hardcodes `font-courier`
++   (a Courier-style display face — unclear at small sizes) and 70%-light
++   option text; that face's unusual line metrics also make the trigger label
++   (e.g. 内置 / 默认) sit visibly below center. Use the theme's standard font
++   and full-strength text, and normalize the line-height. */
++[data-plugins-page] .plugins-select button[role="combobox"],
++[data-plugins-page] .plugins-select [role="listbox"] [role="option"] {
++  font-family: var(--theme-font-sans);
++  letter-spacing: normal;
++}
++[data-plugins-page] .plugins-select button[role="combobox"] span,
++[data-plugins-page] .plugins-select [role="listbox"] [role="option"] span {
++  line-height: 1.5;
++}
++[data-plugins-page] .plugins-select button[role="combobox"] span {
++  color: var(--midground);
++}
++[data-plugins-page] .plugins-select [role="listbox"] [role="option"] {
++  color: var(--midground);
 +}
 +
 diff --git a/web/src/lib/api.ts b/web/src/lib/api.ts
