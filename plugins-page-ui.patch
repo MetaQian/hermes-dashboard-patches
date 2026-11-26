@@ -357,7 +357,7 @@ index 54e507d66fb..48a23da8dfb 100644
  
  export interface AgentPluginInstallResponse {
 diff --git a/web/src/pages/PluginsPage.tsx b/web/src/pages/PluginsPage.tsx
-index 8d502f76fa4..18fc9d9760e 100644
+index 8d502f76fa4..6d8cf2605bf 100644
 --- a/web/src/pages/PluginsPage.tsx
 +++ b/web/src/pages/PluginsPage.tsx
 @@ -1,5 +1,5 @@
@@ -1104,7 +1104,7 @@ index 8d502f76fa4..18fc9d9760e 100644
 -              ))}
 -            </ul>
 +            <div className="flex flex-col gap-3">
-+              <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
++              <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
 +                {catalogEntries.slice(0, catalogLimit).map((entry) => (
 +                  <li key={entry.name} className="h-full">
 +                    <CatalogEntryCard
@@ -1146,7 +1146,7 @@ index 8d502f76fa4..18fc9d9760e 100644
            ) : (
  
 -            <ul className="flex flex-col gap-3">
-+            <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
++            <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
  
                {rows.map((row: HubAgentPluginRow) => (
  
