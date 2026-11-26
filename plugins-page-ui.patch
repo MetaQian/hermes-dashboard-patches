@@ -328,10 +328,10 @@ index 104612bcaf5..a181b7df8fb 100644
  
    skills: {
 diff --git a/web/src/index.css b/web/src/index.css
-index 7c4f39f9d40..13dce7c610e 100644
+index 7c4f39f9d40..2abc376c1f3 100644
 --- a/web/src/index.css
 +++ b/web/src/index.css
-@@ -271,3 +271,26 @@ html[dir="rtl"] {
+@@ -271,3 +271,30 @@ html[dir="rtl"] {
    direction: rtl;
  }
  
@@ -344,10 +344,14 @@ index 7c4f39f9d40..13dce7c610e 100644
 +}
 +
 +/* Plugins page: switches. The UI-lib Switch renders both states in gray (the
-+   on/off difference is hard to read) with a square track. Round the track and
-+   tint the on-state track + knob with the success color, matching the green
-+   "已启用" badges on this page. */
++   on/off difference is hard to read). The UI-lib knob span has NO radius
++   (a square knob inside the pill track looked clashing), so round the knob
++   and use a moderate track radius. On-state is tinted with the success
++   color, matching the green "已启用" badges on this page. */
 +[data-plugins-page] button[role="switch"] {
++  border-radius: 8px;
++}
++[data-plugins-page] button[role="switch"] > span {
 +  border-radius: 9999px;
 +}
 +[data-plugins-page] button[role="switch"][aria-checked="true"] {
