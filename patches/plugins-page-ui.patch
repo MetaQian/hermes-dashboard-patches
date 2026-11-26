@@ -1,8 +1,16 @@
 diff --git a/web/src/i18n/en.ts b/web/src/i18n/en.ts
-index f6f04b06fd2..b638f9a9ab9 100644
+index f6f04b06fd2..f722b8cad21 100644
 --- a/web/src/i18n/en.ts
 +++ b/web/src/i18n/en.ts
-@@ -504,6 +504,34 @@ export const en: Translations = {
+@@ -494,6 +494,7 @@ export const en: Translations = {
+       "Curated, Nous-reviewed plugins pinned to exact commits. Install from here for supply-chain-safe versions.",
+     catalogSearchPlaceholder: "Search catalog...",
+     catalogEmpty: "No catalog entries match.",
++    catalogShowMore: "Show more",
+     catalogEmptyDocsLink: "Learn about Hermes plugins",
+     catalogInstallBtn: "Install",
+     catalogInstalledBadge: "Installed ✓",
+@@ -504,6 +505,34 @@ export const en: Translations = {
        "Plugins install disabled; enable it after install to activate.",
      catalogRequiresEnv: "Requires env",
      removedFromCatalog: "Removed from catalog",
@@ -38,10 +46,18 @@ index f6f04b06fd2..b638f9a9ab9 100644
  
    skills: {
 diff --git a/web/src/i18n/types.ts b/web/src/i18n/types.ts
-index bdf16c89805..aef06017fb1 100644
+index bdf16c89805..e5961b57e94 100644
 --- a/web/src/i18n/types.ts
 +++ b/web/src/i18n/types.ts
-@@ -442,6 +442,33 @@ export interface Translations {
+@@ -433,6 +433,7 @@ export interface Translations {
+     catalogHint?: string;
+     catalogSearchPlaceholder?: string;
+     catalogEmpty?: string;
++    catalogShowMore?: string;
+     catalogEmptyDocsLink?: string;
+     catalogInstallBtn?: string;
+     catalogInstalledBadge?: string;
+@@ -442,6 +443,33 @@ export interface Translations {
      catalogConfirmInstallNote?: string;
      catalogRequiresEnv?: string;
      removedFromCatalog?: string;
@@ -76,10 +92,10 @@ index bdf16c89805..aef06017fb1 100644
  
    // ── Profiles page ──
 diff --git a/web/src/i18n/zh.ts b/web/src/i18n/zh.ts
-index 104612bcaf5..2b790024597 100644
+index 104612bcaf5..70a8f11e90c 100644
 --- a/web/src/i18n/zh.ts
 +++ b/web/src/i18n/zh.ts
-@@ -375,6 +375,50 @@ export const zh: Translations = {
+@@ -375,6 +375,51 @@ export const zh: Translations = {
      versionBadge: "版本",
      showInSidebar: "在侧边栏显示",
      hideFromSidebar: "从侧边栏隐藏",
@@ -92,6 +108,7 @@ index 104612bcaf5..2b790024597 100644
 +    catalogHint: "经 Nous 审核、固定到精确提交的精选插件。",
 +    catalogSearchPlaceholder: "搜索目录...",
 +    catalogEmpty: "没有匹配的目录条目。",
++    catalogShowMore: "显示更多",
 +    catalogEmptyDocsLink: "了解 Hermes 插件",
 +    catalogInstallBtn: "安装",
 +    catalogInstalledBadge: "已安装 ✓",
@@ -160,7 +177,7 @@ index 54e507d66fb..48a23da8dfb 100644
  
  export interface AgentPluginInstallResponse {
 diff --git a/web/src/pages/PluginsPage.tsx b/web/src/pages/PluginsPage.tsx
-index 8d502f76fa4..584d8c7fa4b 100644
+index 8d502f76fa4..031dd78a381 100644
 --- a/web/src/pages/PluginsPage.tsx
 +++ b/web/src/pages/PluginsPage.tsx
 @@ -1,5 +1,5 @@
@@ -195,7 +212,14 @@ index 8d502f76fa4..584d8c7fa4b 100644
            disabled={installing}
            onClick={onInstall}
            size="sm"
-@@ -280,6 +288,8 @@ export default function PluginsPage() {
+@@ -274,12 +282,15 @@ export default function PluginsPage() {
+   const [catalog, setCatalog] = useState<CatalogResponse | null>(null);
+   const [catalogLoading, setCatalogLoading] = useState(true);
+   const [catalogSearch, setCatalogSearch] = useState("");
++  const [catalogLimit, setCatalogLimit] = useState(60);
+   const [catalogConfirm, setCatalogConfirm] = useState<CatalogEntry | null>(null);
+   const [catalogBusy, setCatalogBusy] = useState<string | null>(null);
+   const [installId, setInstallId] = useState("");
    const [installForce, setInstallForce] = useState(false);
    const [installEnable, setInstallEnable] = useState(true);
    const [installBusy, setInstallBusy] = useState(false);
@@ -204,7 +228,7 @@ index 8d502f76fa4..584d8c7fa4b 100644
    const [rescanBusy, setRescanBusy] = useState(false);
    const [memorySel, setMemorySel] = useState(MEMORY_PROVIDER_BUILTIN);
    const [memoryConfig, setMemoryConfig] = useState<MemoryProviderConfig | null>(null);
-@@ -380,12 +390,14 @@ export default function PluginsPage() {
+@@ -380,12 +391,14 @@ export default function PluginsPage() {
          identifier: id,
          force: installForce,
          enable: installEnable,
@@ -219,7 +243,7 @@ index 8d502f76fa4..584d8c7fa4b 100644
        await loadHub();
      } catch (e) {
        showToast(e instanceof Error ? e.message : "Install failed", "error");
-@@ -561,14 +573,35 @@ export default function PluginsPage() {
+@@ -561,14 +574,35 @@ export default function PluginsPage() {
    const visibleMemoryFields =
      memoryConfig?.fields.filter((field) => fieldIsVisible(field, memoryValues)) ?? [];
  
@@ -257,7 +281,7 @@ index 8d502f76fa4..584d8c7fa4b 100644
              <CardHeader>
                <CardTitle>{t.pluginsPage.providersHeading}</CardTitle>
                <p className="text-xs tracking-[0.08em] text-text-tertiary">
-@@ -597,7 +630,7 @@ export default function PluginsPage() {
+@@ -597,7 +631,7 @@ export default function PluginsPage() {
  
                      <Select
                        id="mem-provider"
@@ -266,7 +290,7 @@ index 8d502f76fa4..584d8c7fa4b 100644
                        value={memorySel}
                        onValueChange={setMemorySel}
                      >
-@@ -686,7 +719,7 @@ export default function PluginsPage() {
+@@ -686,7 +720,7 @@ export default function PluginsPage() {
                              {field.kind === "select" ? (
                                <Select
                                  id={`memory-${field.key}`}
@@ -275,7 +299,7 @@ index 8d502f76fa4..584d8c7fa4b 100644
                                  value={String(value ?? "")}
                                  onValueChange={(next) =>
                                    setMemoryValues((current) => ({ ...current, [field.key]: next }))
-@@ -766,7 +799,7 @@ export default function PluginsPage() {
+@@ -766,7 +800,7 @@ export default function PluginsPage() {
                    )}
  
                    <Button
@@ -284,7 +308,7 @@ index 8d502f76fa4..584d8c7fa4b 100644
                      size="sm"
                      disabled={memoryBusy || memoryConfigBusy || memorySetupBusy}
                      onClick={() => void onSaveMemoryProvider()}
-@@ -781,7 +814,7 @@ export default function PluginsPage() {
+@@ -781,7 +815,7 @@ export default function PluginsPage() {
  
                    <Select
                      id="ctx-engine"
@@ -293,7 +317,7 @@ index 8d502f76fa4..584d8c7fa4b 100644
                      value={contextSel}
                      onValueChange={setContextSel}
                    >
-@@ -797,7 +830,7 @@ export default function PluginsPage() {
+@@ -797,7 +831,7 @@ export default function PluginsPage() {
                    </Select>
  
                    <Button
@@ -302,7 +326,7 @@ index 8d502f76fa4..584d8c7fa4b 100644
                      size="sm"
                      disabled={contextBusy}
                      onClick={() => void onSaveContextEngine()}
-@@ -811,74 +844,122 @@ export default function PluginsPage() {
+@@ -811,74 +845,122 @@ export default function PluginsPage() {
            </Card>
          )}
  
@@ -482,7 +506,7 @@ index 8d502f76fa4..584d8c7fa4b 100644
  
            <h3 className="font-mondwest text-display text-xs tracking-[0.12em] text-text-secondary">
              {t.pluginsPage.catalogHeading ?? "Plugin catalog"}
-@@ -890,7 +971,7 @@ export default function PluginsPage() {
+@@ -890,7 +972,7 @@ export default function PluginsPage() {
            </p>
  
            <Input
@@ -491,21 +515,50 @@ index 8d502f76fa4..584d8c7fa4b 100644
              placeholder={t.pluginsPage.catalogSearchPlaceholder ?? "Search catalog..."}
              value={catalogSearch}
              onChange={(e) => setCatalogSearch(e.target.value)}
-@@ -915,9 +996,9 @@ export default function PluginsPage() {
+@@ -915,23 +997,39 @@ export default function PluginsPage() {
                </a>
              </p>
            ) : (
 -            <ul className="flex flex-col gap-3">
-+            <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-               {catalogEntries.map((entry) => (
+-              {catalogEntries.map((entry) => (
 -                <li key={entry.name}>
-+                <li key={entry.name} className="h-full">
-                   <CatalogEntryCard
-                     busy={catalogBusy === entry.name}
-                     entry={entry}
-@@ -929,9 +1010,11 @@ export default function PluginsPage() {
-               ))}
-             </ul>
+-                  <CatalogEntryCard
+-                    busy={catalogBusy === entry.name}
+-                    entry={entry}
+-                    onInstall={() => setCatalogConfirm(entry)}
+-                    removed={removedByName.get(entry.name) ?? null}
+-                    t={t}
+-                  />
+-                </li>
+-              ))}
+-            </ul>
++            <div className="flex flex-col gap-3">
++              <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
++                {catalogEntries.slice(0, catalogLimit).map((entry) => (
++                  <li key={entry.name} className="h-full">
++                    <CatalogEntryCard
++                      busy={catalogBusy === entry.name}
++                      entry={entry}
++                      onInstall={() => setCatalogConfirm(entry)}
++                      removed={removedByName.get(entry.name) ?? null}
++                      t={t}
++                    />
++                  </li>
++                ))}
++              </ul>
++              {catalogEntries.length > catalogLimit ? (
++                <div className="flex justify-center">
++                  <Button
++                    outlined
++                    className="rounded-lg"
++                    onClick={() => setCatalogLimit((n) => n + 100)}
++                  >
++                    {t.pluginsPage.catalogShowMore ?? "Show more"}
++                    （{catalogEntries.length - catalogLimit}）
++                  </Button>
++                </div>
++              ) : null}
++            </div>
            )}
 -        </div>
 +          </div>
@@ -517,7 +570,7 @@ index 8d502f76fa4..584d8c7fa4b 100644
  
            <InstalledPluginsHeader pluginCount={rows.length} {...{ loading, loadHub, showToast, t }} />
  
-@@ -947,11 +1030,11 @@ export default function PluginsPage() {
+@@ -947,11 +1045,11 @@ export default function PluginsPage() {
              <p className="text-xs text-text-tertiary">{t.common.noResults}</p>
            ) : (
  
@@ -531,7 +584,7 @@ index 8d502f76fa4..584d8c7fa4b 100644
  
  
                    <PluginRowCard
-@@ -962,9 +1045,10 @@ export default function PluginsPage() {
+@@ -962,9 +1060,10 @@ export default function PluginsPage() {
                ))}
              </ul>
            )}
@@ -544,7 +597,7 @@ index 8d502f76fa4..584d8c7fa4b 100644
  
  
            <div className="flex flex-col gap-3 opacity-95">
-@@ -973,7 +1057,7 @@ export default function PluginsPage() {
+@@ -973,7 +1072,7 @@ export default function PluginsPage() {
                {t.pluginsPage.orphanHeading}
              </h3>
  
@@ -553,7 +606,7 @@ index 8d502f76fa4..584d8c7fa4b 100644
  
                {hub!.orphan_dashboard_plugins.map((m) => (
  
-@@ -1032,18 +1116,27 @@ export default function PluginsPage() {
+@@ -1032,18 +1131,27 @@ export default function PluginsPage() {
  }
  
  interface PluginRowCardProps {
@@ -583,7 +636,7 @@ index 8d502f76fa4..584d8c7fa4b 100644
  function PluginRowCard(props: PluginRowCardProps) {
    const {
      row,
-@@ -1052,6 +1145,7 @@ function PluginRowCard(props: PluginRowCardProps) {
+@@ -1052,6 +1160,7 @@ function PluginRowCard(props: PluginRowCardProps) {
      showToast,
      t,
    } = props;
@@ -591,7 +644,7 @@ index 8d502f76fa4..584d8c7fa4b 100644
  
    const dm = row.dashboard_manifest;
  
-@@ -1059,6 +1153,7 @@ function PluginRowCard(props: PluginRowCardProps) {
+@@ -1059,6 +1168,7 @@ function PluginRowCard(props: PluginRowCardProps) {
  
    const busy = rowBusy === row.name;
    const [confirmRemove, setConfirmRemove] = useState(false);
@@ -599,7 +652,7 @@ index 8d502f76fa4..584d8c7fa4b 100644
  
    const badgeTone =
      row.runtime_status === "enabled"
-@@ -1067,201 +1162,215 @@ function PluginRowCard(props: PluginRowCardProps) {
+@@ -1067,201 +1177,215 @@ function PluginRowCard(props: PluginRowCardProps) {
          ? "destructive"
          : "outline";
  
@@ -956,7 +1009,7 @@ index 8d502f76fa4..584d8c7fa4b 100644
          description={`This will remove the "${row.name}" plugin from your agent.`}
          destructive
          confirmLabel={t.common.delete}
-@@ -1286,89 +1395,103 @@ function catalogDocsHref(url: string): string | null {
+@@ -1286,89 +1410,103 @@ function catalogDocsHref(url: string): string | null {
  
  function CatalogEntryCard(props: CatalogEntryCardProps) {
    const { busy, entry, onInstall, removed, t } = props;
@@ -1112,7 +1165,7 @@ index 8d502f76fa4..584d8c7fa4b 100644
              target="_blank"
              rel="noreferrer"
            >
-@@ -1378,25 +1501,102 @@ function CatalogEntryCard(props: CatalogEntryCardProps) {
+@@ -1378,25 +1516,102 @@ function CatalogEntryCard(props: CatalogEntryCardProps) {
  
            {docsHref ? (
              <a
