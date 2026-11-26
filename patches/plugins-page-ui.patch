@@ -160,7 +160,7 @@ index 54e507d66fb..48a23da8dfb 100644
  
  export interface AgentPluginInstallResponse {
 diff --git a/web/src/pages/PluginsPage.tsx b/web/src/pages/PluginsPage.tsx
-index 8d502f76fa4..1aae6a601c3 100644
+index 8d502f76fa4..584d8c7fa4b 100644
 --- a/web/src/pages/PluginsPage.tsx
 +++ b/web/src/pages/PluginsPage.tsx
 @@ -1,5 +1,5 @@
@@ -302,7 +302,7 @@ index 8d502f76fa4..1aae6a601c3 100644
                      size="sm"
                      disabled={contextBusy}
                      onClick={() => void onSaveContextEngine()}
-@@ -811,74 +844,127 @@ export default function PluginsPage() {
+@@ -811,74 +844,122 @@ export default function PluginsPage() {
            </Card>
          )}
  
@@ -348,7 +348,7 @@ index 8d502f76fa4..1aae6a601c3 100644
 +              aria-selected={section === s.id}
 +              onClick={() => setSection(s.id)}
 +              className={cn(
-+                "inline-flex items-center gap-2 rounded-xl border px-4 py-2 font-mondwest text-display text-xs tracking-[0.12em] uppercase transition-colors",
++                "inline-flex items-center gap-1.5 rounded-xl border px-4 py-2 font-mondwest text-display text-xs tracking-[0.12em] uppercase transition-colors",
 +                section === s.id
 +                  ? "border-current/40 bg-current/10 text-foreground"
 +                  : "border-border text-text-secondary hover:border-current/30 hover:text-foreground",
@@ -356,12 +356,7 @@ index 8d502f76fa4..1aae6a601c3 100644
 +            >
 +              {s.label}
 +              {typeof s.count === "number" ? (
-+                <span
-+                  className={cn(
-+                    "border px-1.5 text-[0.625rem] tracking-[0.08em]",
-+                    section === s.id ? "border-current/40" : "border-border",
-+                  )}
-+                >
++                <span className="text-[0.6875rem] tracking-[0.08em] text-text-tertiary normal-case">
 +                  {s.count}
 +                </span>
 +              ) : null}
@@ -487,7 +482,7 @@ index 8d502f76fa4..1aae6a601c3 100644
  
            <h3 className="font-mondwest text-display text-xs tracking-[0.12em] text-text-secondary">
              {t.pluginsPage.catalogHeading ?? "Plugin catalog"}
-@@ -890,7 +976,7 @@ export default function PluginsPage() {
+@@ -890,7 +971,7 @@ export default function PluginsPage() {
            </p>
  
            <Input
@@ -496,7 +491,7 @@ index 8d502f76fa4..1aae6a601c3 100644
              placeholder={t.pluginsPage.catalogSearchPlaceholder ?? "Search catalog..."}
              value={catalogSearch}
              onChange={(e) => setCatalogSearch(e.target.value)}
-@@ -915,9 +1001,9 @@ export default function PluginsPage() {
+@@ -915,9 +996,9 @@ export default function PluginsPage() {
                </a>
              </p>
            ) : (
@@ -508,7 +503,7 @@ index 8d502f76fa4..1aae6a601c3 100644
                    <CatalogEntryCard
                      busy={catalogBusy === entry.name}
                      entry={entry}
-@@ -929,9 +1015,11 @@ export default function PluginsPage() {
+@@ -929,9 +1010,11 @@ export default function PluginsPage() {
                ))}
              </ul>
            )}
@@ -522,7 +517,7 @@ index 8d502f76fa4..1aae6a601c3 100644
  
            <InstalledPluginsHeader pluginCount={rows.length} {...{ loading, loadHub, showToast, t }} />
  
-@@ -947,11 +1035,11 @@ export default function PluginsPage() {
+@@ -947,11 +1030,11 @@ export default function PluginsPage() {
              <p className="text-xs text-text-tertiary">{t.common.noResults}</p>
            ) : (
  
@@ -536,7 +531,7 @@ index 8d502f76fa4..1aae6a601c3 100644
  
  
                    <PluginRowCard
-@@ -962,9 +1050,10 @@ export default function PluginsPage() {
+@@ -962,9 +1045,10 @@ export default function PluginsPage() {
                ))}
              </ul>
            )}
@@ -549,7 +544,7 @@ index 8d502f76fa4..1aae6a601c3 100644
  
  
            <div className="flex flex-col gap-3 opacity-95">
-@@ -973,7 +1062,7 @@ export default function PluginsPage() {
+@@ -973,7 +1057,7 @@ export default function PluginsPage() {
                {t.pluginsPage.orphanHeading}
              </h3>
  
@@ -558,7 +553,7 @@ index 8d502f76fa4..1aae6a601c3 100644
  
                {hub!.orphan_dashboard_plugins.map((m) => (
  
-@@ -1032,18 +1121,27 @@ export default function PluginsPage() {
+@@ -1032,18 +1116,27 @@ export default function PluginsPage() {
  }
  
  interface PluginRowCardProps {
@@ -588,7 +583,7 @@ index 8d502f76fa4..1aae6a601c3 100644
  function PluginRowCard(props: PluginRowCardProps) {
    const {
      row,
-@@ -1052,6 +1150,7 @@ function PluginRowCard(props: PluginRowCardProps) {
+@@ -1052,6 +1145,7 @@ function PluginRowCard(props: PluginRowCardProps) {
      showToast,
      t,
    } = props;
@@ -596,7 +591,7 @@ index 8d502f76fa4..1aae6a601c3 100644
  
    const dm = row.dashboard_manifest;
  
-@@ -1059,6 +1158,7 @@ function PluginRowCard(props: PluginRowCardProps) {
+@@ -1059,6 +1153,7 @@ function PluginRowCard(props: PluginRowCardProps) {
  
    const busy = rowBusy === row.name;
    const [confirmRemove, setConfirmRemove] = useState(false);
@@ -604,7 +599,7 @@ index 8d502f76fa4..1aae6a601c3 100644
  
    const badgeTone =
      row.runtime_status === "enabled"
-@@ -1067,201 +1167,215 @@ function PluginRowCard(props: PluginRowCardProps) {
+@@ -1067,201 +1162,215 @@ function PluginRowCard(props: PluginRowCardProps) {
          ? "destructive"
          : "outline";
  
@@ -961,7 +956,7 @@ index 8d502f76fa4..1aae6a601c3 100644
          description={`This will remove the "${row.name}" plugin from your agent.`}
          destructive
          confirmLabel={t.common.delete}
-@@ -1286,89 +1400,103 @@ function catalogDocsHref(url: string): string | null {
+@@ -1286,89 +1395,103 @@ function catalogDocsHref(url: string): string | null {
  
  function CatalogEntryCard(props: CatalogEntryCardProps) {
    const { busy, entry, onInstall, removed, t } = props;
@@ -1117,7 +1112,7 @@ index 8d502f76fa4..1aae6a601c3 100644
              target="_blank"
              rel="noreferrer"
            >
-@@ -1378,25 +1506,102 @@ function CatalogEntryCard(props: CatalogEntryCardProps) {
+@@ -1378,25 +1501,102 @@ function CatalogEntryCard(props: CatalogEntryCardProps) {
  
            {docsHref ? (
              <a
