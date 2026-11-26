@@ -1,0 +1,1231 @@
+diff --git a/web/src/i18n/en.ts b/web/src/i18n/en.ts
+index f6f04b06fd2..b638f9a9ab9 100644
+--- a/web/src/i18n/en.ts
++++ b/web/src/i18n/en.ts
+@@ -504,6 +504,34 @@ export const en: Translations = {
+       "Plugins install disabled; enable it after install to activate.",
+     catalogRequiresEnv: "Requires env",
+     removedFromCatalog: "Removed from catalog",
++    installedTab: "Installed",
++    catalogTab: "Catalog",
++    githubInstallTab: "Install from GitHub",
++    githubInstallTitle: "Install from GitHub",
++    githubInstallHint:
++      "Clone a plugin straight from a GitHub repository. Leave the commit empty to install the default branch.",
++    githubRepoLabel: "Repository",
++    githubRepoHint:
++      "owner/repo, owner/repo/subdir, or a full https://github.com/... URL",
++    githubRefLabel: "Pinned commit (optional)",
++    githubRefHint: "A full commit SHA pins this install to one exact revision.",
++    // Card grid + details dialog.
++    detailsBtn: "Details",
++    detailVersion: "Version",
++    detailSource: "Source",
++    detailStatus: "Status",
++    detailPath: "Install path",
++    detailMaintainer: "Maintainer",
++    detailRepo: "Repository",
++    detailPlatforms: "Platforms",
++    detailRequiresHermes: "Requires Hermes",
++    detailDocs: "Documentation",
++    detailCapabilities: "Capabilities",
++    detailActions: "Actions",
++    capTools: "tools",
++    capHooks: "hooks",
++    capMiddleware: "middleware",
++    capEnv: "env",
+   },
+ 
+   skills: {
+diff --git a/web/src/i18n/types.ts b/web/src/i18n/types.ts
+index bdf16c89805..aef06017fb1 100644
+--- a/web/src/i18n/types.ts
++++ b/web/src/i18n/types.ts
+@@ -442,6 +442,33 @@ export interface Translations {
+     catalogConfirmInstallNote?: string;
+     catalogRequiresEnv?: string;
+     removedFromCatalog?: string;
++    // Section tabs + dedicated GitHub-install form (optional, en fallback at call site).
++    installedTab?: string;
++    catalogTab?: string;
++    githubInstallTab?: string;
++    githubInstallTitle?: string;
++    githubInstallHint?: string;
++    githubRepoLabel?: string;
++    githubRepoHint?: string;
++    githubRefLabel?: string;
++    githubRefHint?: string;
++    // Card grid + details dialog (optional, en fallback at call site).
++    detailsBtn?: string;
++    detailVersion?: string;
++    detailSource?: string;
++    detailStatus?: string;
++    detailPath?: string;
++    detailMaintainer?: string;
++    detailRepo?: string;
++    detailPlatforms?: string;
++    detailRequiresHermes?: string;
++    detailDocs?: string;
++    detailCapabilities?: string;
++    detailActions?: string;
++    capTools?: string;
++    capHooks?: string;
++    capMiddleware?: string;
++    capEnv?: string;
+   };
+ 
+   // ── Profiles page ──
+diff --git a/web/src/i18n/zh.ts b/web/src/i18n/zh.ts
+index 104612bcaf5..2b790024597 100644
+--- a/web/src/i18n/zh.ts
++++ b/web/src/i18n/zh.ts
+@@ -375,6 +375,50 @@ export const zh: Translations = {
+     versionBadge: "版本",
+     showInSidebar: "在侧边栏显示",
+     hideFromSidebar: "从侧边栏隐藏",
++    // ── 分区标签页 ──
++    installedTab: "已安装",
++    catalogTab: "插件目录",
++    githubInstallTab: "从 GitHub 安装",
++    // ── 插件目录 ──
++    catalogHeading: "插件目录",
++    catalogHint: "经 Nous 审核、固定到精确提交的精选插件。",
++    catalogSearchPlaceholder: "搜索目录...",
++    catalogEmpty: "没有匹配的目录条目。",
++    catalogEmptyDocsLink: "了解 Hermes 插件",
++    catalogInstallBtn: "安装",
++    catalogInstalledBadge: "已安装 ✓",
++    catalogUpdateBtn: "有可用更新",
++    catalogRemovedBadge: "已下架",
++    catalogConfirmTitle: "安装这个插件？",
++    catalogConfirmInstallNote:
++      "插件安装后默认停用，请在列表中启用以激活。",
++    catalogRequiresEnv: "需要环境变量",
++    removedFromCatalog: "已从目录下架",
++    // ── 从 GitHub 安装 ──
++    githubInstallTitle: "从 GitHub 安装",
++    githubInstallHint:
++      "直接从 GitHub 仓库克隆安装插件。不填提交号则安装默认分支。",
++    githubRepoLabel: "仓库",
++    githubRepoHint: "owner/repo、owner/repo/子目录，或完整 https://github.com/... 地址",
++    githubRefLabel: "固定提交（可选）",
++    githubRefHint: "填写完整 commit SHA 可将安装钉死在该版本。",
++    // ── 卡片网格 + 详情弹窗 ──
++    detailsBtn: "查看详情",
++    detailVersion: "版本",
++    detailSource: "来源",
++    detailStatus: "状态",
++    detailPath: "安装路径",
++    detailMaintainer: "维护者",
++    detailRepo: "仓库",
++    detailPlatforms: "平台",
++    detailRequiresHermes: "要求 Hermes",
++    detailDocs: "文档",
++    detailCapabilities: "能力",
++    detailActions: "操作",
++    capTools: "工具",
++    capHooks: "钩子",
++    capMiddleware: "中间件",
++    capEnv: "环境变量",
+   },
+ 
+   skills: {
+diff --git a/web/src/index.css b/web/src/index.css
+index 7c4f39f9d40..e80eb8a4193 100644
+--- a/web/src/index.css
++++ b/web/src/index.css
+@@ -271,3 +271,11 @@ html[dir="rtl"] {
+   direction: rtl;
+ }
+ 
++/* Plugins page: soften the Select trigger + dropdown panel. The UI library's
++   Select renders its own hardcoded classes (no radius prop), so scope a
++   radius to the two direct children of the .plugins-select wrapper. */
++[data-plugins-page] .plugins-select > button,
++[data-plugins-page] .plugins-select > div {
++  border-radius: 10px;
++}
++
+diff --git a/web/src/lib/api.ts b/web/src/lib/api.ts
+index 54e507d66fb..48a23da8dfb 100644
+--- a/web/src/lib/api.ts
++++ b/web/src/lib/api.ts
+@@ -2537,6 +2537,8 @@ export interface AgentPluginInstallRequest {
+   enable?: boolean;
+   /** Install by curated-catalog name (resolves repo + pinned SHA server-side). */
+   catalog_name?: string;
++  /** Pin the install to one exact full commit SHA (same contract as `--ref`). */
++  ref?: string;
+ }
+ 
+ export interface AgentPluginInstallResponse {
+diff --git a/web/src/pages/PluginsPage.tsx b/web/src/pages/PluginsPage.tsx
+index 8d502f76fa4..1aae6a601c3 100644
+--- a/web/src/pages/PluginsPage.tsx
++++ b/web/src/pages/PluginsPage.tsx
+@@ -1,5 +1,5 @@
+-import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from "react";
+-import { ExternalLink, RefreshCw, Trash2, Eye, EyeOff } from "lucide-react";
++import { useCallback, useEffect, useLayoutEffect, useMemo, useState, type ReactNode } from "react";
++import { ExternalLink, RefreshCw, Trash2, Eye, EyeOff, ChevronRight } from "lucide-react";
+ import type { Translations } from "@/i18n/types";
+ import { Link } from "react-router";
+ import { externalUrlTarget } from "@hermes/shared";
+@@ -26,6 +26,14 @@ import { Spinner } from "@nous-research/ui/ui/components/spinner";
+ import { CommandBlock, CopyButton } from "@nous-research/ui/ui/components/command-block";
+ import { Card, CardContent, CardHeader, CardTitle } from "@nous-research/ui/ui/components/card";
+ import { ConfirmDialog } from "@nous-research/ui/ui/components/confirm-dialog";
++import {
++  Dialog,
++  DialogContent,
++  DialogDescription,
++  DialogFooter,
++  DialogHeader,
++  DialogTitle,
++} from "@nous-research/ui/ui/components/dialog";
+ import { Input } from "@nous-research/ui/ui/components/input";
+ import { Label } from "@nous-research/ui/ui/components/label";
+ import { useToast } from "@nous-research/ui/hooks/use-toast";
+@@ -187,7 +195,7 @@ function MemoryProviderSetupHint({
+ 
+       {needsDependencySetup ? (
+         <Button
+-          className="w-fit uppercase"
++          className="w-fit uppercase rounded-lg"
+           disabled={installing}
+           onClick={onInstall}
+           size="sm"
+@@ -280,6 +288,8 @@ export default function PluginsPage() {
+   const [installForce, setInstallForce] = useState(false);
+   const [installEnable, setInstallEnable] = useState(true);
+   const [installBusy, setInstallBusy] = useState(false);
++  const [installRef, setInstallRef] = useState("");
++  const [section, setSection] = useState<"installed" | "catalog" | "github">("installed");
+   const [rescanBusy, setRescanBusy] = useState(false);
+   const [memorySel, setMemorySel] = useState(MEMORY_PROVIDER_BUILTIN);
+   const [memoryConfig, setMemoryConfig] = useState<MemoryProviderConfig | null>(null);
+@@ -380,12 +390,14 @@ export default function PluginsPage() {
+         identifier: id,
+         force: installForce,
+         enable: installEnable,
++        ref: installRef.trim() || undefined,
+       });
+       showToast(`${r.plugin_name ?? id} installed`, "success");
+       if ((r.warnings?.length ?? 0) > 0) showToast(r.warnings!.join(" "), "error");
+       if ((r.missing_env?.length ?? 0) > 0)
+         showToast(`${t.pluginsPage.missingEnvWarn} ${r.missing_env!.join(", ")}`, "error");
+       setInstallId("");
++      setInstallRef("");
+       await loadHub();
+     } catch (e) {
+       showToast(e instanceof Error ? e.message : "Install failed", "error");
+@@ -561,14 +573,35 @@ export default function PluginsPage() {
+   const visibleMemoryFields =
+     memoryConfig?.fields.filter((field) => fieldIsVisible(field, memoryValues)) ?? [];
+ 
++  const sections: Array<{
++    id: "installed" | "catalog" | "github";
++    label: string;
++    count?: number;
++  }> = [
++    {
++      id: "installed",
++      label: t.pluginsPage.installedTab ?? "Installed",
++      count: loading ? undefined : rows.length,
++    },
++    {
++      id: "catalog",
++      label: t.pluginsPage.catalogTab ?? "Catalog",
++      count: catalogLoading ? undefined : catalog?.entries.length ?? 0,
++    },
++    {
++      id: "github",
++      label: t.pluginsPage.githubInstallTab ?? "Install from GitHub",
++    },
++  ];
++
+   return (
+-    <div className="flex flex-col gap-4">
++    <div data-plugins-page className="flex flex-col gap-4">
+       <PluginSlot name="plugins:top" />
+ 
+       <div className={cn("flex w-full flex-col gap-8")}>
+ 
+         {providers && (
+-          <Card>
++          <Card className="rounded-2xl">
+             <CardHeader>
+               <CardTitle>{t.pluginsPage.providersHeading}</CardTitle>
+               <p className="text-xs tracking-[0.08em] text-text-tertiary">
+@@ -597,7 +630,7 @@ export default function PluginsPage() {
+ 
+                     <Select
+                       id="mem-provider"
+-                      className="w-full"
++                      className="plugins-select w-full"
+                       value={memorySel}
+                       onValueChange={setMemorySel}
+                     >
+@@ -686,7 +719,7 @@ export default function PluginsPage() {
+                             {field.kind === "select" ? (
+                               <Select
+                                 id={`memory-${field.key}`}
+-                                className="w-full"
++                                className="plugins-select w-full"
+                                 value={String(value ?? "")}
+                                 onValueChange={(next) =>
+                                   setMemoryValues((current) => ({ ...current, [field.key]: next }))
+@@ -766,7 +799,7 @@ export default function PluginsPage() {
+                   )}
+ 
+                   <Button
+-                    className="w-fit uppercase"
++                    className="w-fit uppercase rounded-lg"
+                     size="sm"
+                     disabled={memoryBusy || memoryConfigBusy || memorySetupBusy}
+                     onClick={() => void onSaveMemoryProvider()}
+@@ -781,7 +814,7 @@ export default function PluginsPage() {
+ 
+                   <Select
+                     id="ctx-engine"
+-                    className="w-full"
++                    className="plugins-select w-full"
+                     value={contextSel}
+                     onValueChange={setContextSel}
+                   >
+@@ -797,7 +830,7 @@ export default function PluginsPage() {
+                   </Select>
+ 
+                   <Button
+-                    className="w-fit uppercase"
++                    className="w-fit uppercase rounded-lg"
+                     size="sm"
+                     disabled={contextBusy}
+                     onClick={() => void onSaveContextEngine()}
+@@ -811,74 +844,127 @@ export default function PluginsPage() {
+           </Card>
+         )}
+ 
+-        <Card>
+-          <CardHeader>
+-            <CardTitle>{t.pluginsPage.installHeading}</CardTitle>
+-            <p className="text-xs tracking-[0.08em] text-text-tertiary">
+-              {t.pluginsPage.installHint}
+-            </p>
+-          </CardHeader>
+-
+-
+-          <CardContent className="flex flex-col gap-4">
+-
+-            <div className="flex flex-col gap-2">
+-
+-              <Label htmlFor="install-url">{t.pluginsPage.identifierLabel}</Label>
+-
+-              <Input
+-                className="font-mono-ui lowercase"
+-                id="install-url"
+-                placeholder="owner/repo, owner/repo/subdir, or https://..."
+-                spellCheck={false}
+-                value={installId}
+-                onChange={(e) => setInstallId(e.target.value)}
+-              />
+-            </div>
+-
+-
+-            <div className="flex flex-wrap items-center gap-8">
+-
+-              <div className="flex items-center gap-3">
++        <div
++          className="flex flex-wrap items-center gap-2"
++          role="tablist"
++          aria-label={t.pluginsPage.headline}
++        >
++          {sections.map((s) => (
++            <button
++              key={s.id}
++              type="button"
++              role="tab"
++              aria-selected={section === s.id}
++              onClick={() => setSection(s.id)}
++              className={cn(
++                "inline-flex items-center gap-2 rounded-xl border px-4 py-2 font-mondwest text-display text-xs tracking-[0.12em] uppercase transition-colors",
++                section === s.id
++                  ? "border-current/40 bg-current/10 text-foreground"
++                  : "border-border text-text-secondary hover:border-current/30 hover:text-foreground",
++              )}
++            >
++              {s.label}
++              {typeof s.count === "number" ? (
++                <span
++                  className={cn(
++                    "border px-1.5 text-[0.625rem] tracking-[0.08em]",
++                    section === s.id ? "border-current/40" : "border-border",
++                  )}
++                >
++                  {s.count}
++                </span>
++              ) : null}
++            </button>
++          ))}
++        </div>
+ 
+-                <Switch checked={installForce} onCheckedChange={setInstallForce} />
++        {section === "github" ? (
++          <Card className="rounded-2xl">
++            <CardHeader>
++              <CardTitle>
++                {t.pluginsPage.githubInstallTitle ?? t.pluginsPage.installHeading}
++              </CardTitle>
++              <p className="text-xs tracking-[0.08em] text-text-tertiary">
++                {t.pluginsPage.githubInstallHint ?? t.pluginsPage.installHint}
++              </p>
++            </CardHeader>
+ 
+-                <span className="text-xs tracking-[0.06em] text-text-secondary">
+-                  {t.pluginsPage.forceReinstall}
+-                </span>
++            <CardContent className="flex flex-col gap-4">
++              <div className="flex flex-col gap-2">
++                <Label htmlFor="install-url">
++                  {t.pluginsPage.githubRepoLabel ?? t.pluginsPage.identifierLabel}
++                </Label>
++                <Input
++                  className="font-mono-ui lowercase rounded-lg"
++                  id="install-url"
++                  placeholder="owner/repo, owner/repo/subdir, or https://..."
++                  spellCheck={false}
++                  value={installId}
++                  onChange={(e) => setInstallId(e.target.value)}
++                />
++                <p className="text-xs tracking-[0.06em] text-text-tertiary">
++                  {t.pluginsPage.githubRepoHint ??
++                    "owner/repo, owner/repo/subdir, or a full https://github.com/... URL"}
++                </p>
+               </div>
+ 
+-              <div className="flex items-center gap-3">
++              <div className="flex flex-col gap-2">
++                <Label htmlFor="install-ref">
++                  {t.pluginsPage.githubRefLabel ?? "Pinned commit (optional)"}
++                </Label>
++                <Input
++                  className="font-mono-ui lowercase rounded-lg"
++                  id="install-ref"
++                  placeholder="full commit SHA (optional)"
++                  spellCheck={false}
++                  value={installRef}
++                  onChange={(e) => setInstallRef(e.target.value)}
++                />
++                <p className="text-xs tracking-[0.06em] text-text-tertiary">
++                  {t.pluginsPage.githubRefHint ??
++                    "A full commit SHA pins this install to one exact revision."}
++                </p>
++              </div>
+ 
+-                <Switch checked={installEnable} onCheckedChange={setInstallEnable} />
++              <div className="flex flex-wrap items-center gap-8">
++                <div className="flex items-center gap-3">
++                  <Switch checked={installForce} className="rounded-full" onCheckedChange={setInstallForce} />
++                  <span className="text-xs tracking-[0.06em] text-text-secondary">
++                    {t.pluginsPage.forceReinstall}
++                  </span>
++                </div>
+ 
+-                <span className="text-xs tracking-[0.06em] text-text-secondary">
+-                  {t.pluginsPage.enableAfterInstall}
+-                </span>
++                <div className="flex items-center gap-3">
++                  <Switch checked={installEnable} className="rounded-full" onCheckedChange={setInstallEnable} />
++                  <span className="text-xs tracking-[0.06em] text-text-secondary">
++                    {t.pluginsPage.enableAfterInstall}
++                  </span>
++                </div>
+               </div>
+-            </div>
+ 
+-            <Button
+-              className="w-fit uppercase"
+-              size="sm"
+-              disabled={installBusy}
+-              onClick={() => void onInstall()}
+-              prefix={installBusy ? <Spinner /> : undefined}
+-            >
+-              {t.pluginsPage.installBtn}
+-            </Button>
++              <Button
++                className="w-fit uppercase rounded-lg"
++                size="sm"
++                disabled={installBusy}
++                onClick={() => void onInstall()}
++                prefix={installBusy ? <Spinner /> : undefined}
++              >
++                {t.pluginsPage.installBtn}
++              </Button>
+ 
+-            <p className="text-xs tracking-[0.06em] text-text-tertiary">
+-              {t.pluginsPage.rescanHint}
+-            </p>
++              <p className="text-xs tracking-[0.06em] text-text-tertiary">
++                {t.pluginsPage.rescanHint}
++              </p>
+ 
+-            <p className="text-xs tracking-[0.06em] text-text-tertiary">
+-              {t.pluginsPage.removeHint}
+-            </p>
+-          </CardContent>
+-        </Card>
++              <p className="text-xs tracking-[0.06em] text-text-tertiary">
++                {t.pluginsPage.removeHint}
++              </p>
++            </CardContent>
++          </Card>
++        ) : null}
+ 
+-        <div className="flex flex-col gap-3" data-testid="plugin-catalog-section">
++        {section === "catalog" ? (
++          <div className="flex flex-col gap-3" data-testid="plugin-catalog-section">
+ 
+           <h3 className="font-mondwest text-display text-xs tracking-[0.12em] text-text-secondary">
+             {t.pluginsPage.catalogHeading ?? "Plugin catalog"}
+@@ -890,7 +976,7 @@ export default function PluginsPage() {
+           </p>
+ 
+           <Input
+-            className="max-w-md"
++            className="max-w-md rounded-lg"
+             placeholder={t.pluginsPage.catalogSearchPlaceholder ?? "Search catalog..."}
+             value={catalogSearch}
+             onChange={(e) => setCatalogSearch(e.target.value)}
+@@ -915,9 +1001,9 @@ export default function PluginsPage() {
+               </a>
+             </p>
+           ) : (
+-            <ul className="flex flex-col gap-3">
++            <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+               {catalogEntries.map((entry) => (
+-                <li key={entry.name}>
++                <li key={entry.name} className="h-full">
+                   <CatalogEntryCard
+                     busy={catalogBusy === entry.name}
+                     entry={entry}
+@@ -929,9 +1015,11 @@ export default function PluginsPage() {
+               ))}
+             </ul>
+           )}
+-        </div>
++          </div>
++        ) : null}
+ 
+-        <div className="flex flex-col gap-3">
++        {section === "installed" ? (
++          <div className="flex flex-col gap-3">
+ 
+           <InstalledPluginsHeader pluginCount={rows.length} {...{ loading, loadHub, showToast, t }} />
+ 
+@@ -947,11 +1035,11 @@ export default function PluginsPage() {
+             <p className="text-xs text-text-tertiary">{t.common.noResults}</p>
+           ) : (
+ 
+-            <ul className="flex flex-col gap-3">
++            <ul className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+ 
+               {rows.map((row: HubAgentPluginRow) => (
+ 
+-                <li key={row.name}>
++                <li key={row.name} className="h-full">
+ 
+ 
+                   <PluginRowCard
+@@ -962,9 +1050,10 @@ export default function PluginsPage() {
+               ))}
+             </ul>
+           )}
+-        </div>
++          </div>
++        ) : null}
+ 
+-        {(hub?.orphan_dashboard_plugins?.length ?? 0) > 0 ? (
++        {(section === "installed" && (hub?.orphan_dashboard_plugins?.length ?? 0) > 0) ? (
+ 
+ 
+           <div className="flex flex-col gap-3 opacity-95">
+@@ -973,7 +1062,7 @@ export default function PluginsPage() {
+               {t.pluginsPage.orphanHeading}
+             </h3>
+ 
+-            <ul className="flex flex-col gap-2 rounded border border-current/15 p-4">
++            <ul className="flex flex-col gap-2 rounded-2xl border border-current/15 p-4">
+ 
+               {hub!.orphan_dashboard_plugins.map((m) => (
+ 
+@@ -1032,18 +1121,27 @@ export default function PluginsPage() {
+ }
+ 
+ interface PluginRowCardProps {
+-
+   row: HubAgentPluginRow;
+   rowBusy: string | null;
+   setRuntimeLoading: (
+     name: string,
+     fn: () => Promise<unknown>,
+   ) => Promise<void>;
+-
+   showToast: (msg: string, variant: "success" | "error") => void;
+   t: Translations;
+ }
+ 
++function PluginDetailRow({ label, value }: { label: string; value: ReactNode }) {
++  return (
++    <div className="grid grid-cols-[110px_minmax(0,1fr)] items-start gap-3 text-xs">
++      <span className="pt-0.5 font-mondwest text-display text-[0.6875rem] tracking-[0.1em] text-text-tertiary uppercase">
++        {label}
++      </span>
++      <span className="min-w-0 break-words text-text-secondary">{value}</span>
++    </div>
++  );
++}
++
+ function PluginRowCard(props: PluginRowCardProps) {
+   const {
+     row,
+@@ -1052,6 +1150,7 @@ function PluginRowCard(props: PluginRowCardProps) {
+     showToast,
+     t,
+   } = props;
++  const pp = t.pluginsPage;
+ 
+   const dm = row.dashboard_manifest;
+ 
+@@ -1059,6 +1158,7 @@ function PluginRowCard(props: PluginRowCardProps) {
+ 
+   const busy = rowBusy === row.name;
+   const [confirmRemove, setConfirmRemove] = useState(false);
++  const [detailOpen, setDetailOpen] = useState(false);
+ 
+   const badgeTone =
+     row.runtime_status === "enabled"
+@@ -1067,201 +1167,215 @@ function PluginRowCard(props: PluginRowCardProps) {
+         ? "destructive"
+         : "outline";
+ 
+-  return (
+-
+-    <Card className={cn(busy ? "opacity-70" : undefined)}>
++  const onToggle = () => {
++    void setRuntimeLoading(row.name, async () => {
++      const res =
++        row.runtime_status === "enabled"
++          ? await api.disableAgentPlugin(row.name)
++          : await api.enableAgentPlugin(row.name);
++      showToast(
++        res.restart_required
++          ? pp.toggleTakesEffectAfterRestart
++          : row.runtime_status === "enabled"
++            ? pp.disableRuntime
++            : pp.enableRuntime,
++        "success",
++      );
++    });
++  };
+ 
++  const onUpdateGit = () => {
++    void setRuntimeLoading(row.name, async () => {
++      const applied = await runDashboardPluginUpdate(row.name, {
++        consentBody: pp.updateConsentBody ?? en.pluginsPage.updateConsentBody!,
++        scanBody: pp.updateScanBody ?? en.pluginsPage.updateScanBody!,
++        scanBlocked: pp.updateScanBlocked ?? en.pluginsPage.updateScanBlocked!,
++      });
++      if (applied) showToast(pp.updateGit, "success");
++    });
++  };
+ 
+-      <CardContent className="flex flex-col gap-4 px-6 py-4">
++  const onVisibility = () => {
++    void setRuntimeLoading(row.name, async () => {
++      await api.setPluginVisibility(row.name, !row.user_hidden);
++    });
++  };
+ 
++  const onRemove = () => {
++    setConfirmRemove(false);
++    void setRuntimeLoading(row.name, async () => {
++      await api.removeAgentPlugin(row.name);
++      showToast(`${row.name} removed`, "success");
++    });
++  };
+ 
+-        <div className="flex flex-wrap items-start justify-between gap-4">
++  const toggleLabel =
++    row.runtime_status === "enabled" ? pp.disableRuntime : pp.enableRuntime;
+ 
+-          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
++  return (
++    <Card
++      className={cn(
++        "h-full rounded-2xl transition-colors hover:border-current/25",
++        busy && "opacity-70",
++      )}
++    >
++      <CardContent className="flex flex-col gap-3 px-5 py-4">
++        <div className="flex items-start justify-between gap-3">
++          <div className="min-w-0 flex-1">
++            <h4 className="truncate font-semibold">{row.name}</h4>
++            <p className="mt-0.5 truncate text-xs text-text-tertiary">
++              v{row.version || "—"} · {row.source}
++            </p>
++          </div>
++          <Badge tone={badgeTone} className="shrink-0 rounded-full">
++            {row.runtime_status}
++          </Badge>
++        </div>
+ 
+-            <span className="truncate font-semibold">{row.name}</span>
++        {row.description ? (
++          <p className="line-clamp-2 text-xs tracking-[0.06em] text-text-secondary">
++            {row.description}
++          </p>
++        ) : null}
+ 
+-            <Badge tone="outline">
+-              {t.pluginsPage.sourceBadge}: {row.source}
+-            </Badge>
++        {row.removed_reason ? (
++          <p className="rounded-lg border border-destructive/50 px-3 py-2 text-xs text-destructive">
++            {pp.removedFromCatalog ?? "Removed from catalog"}: {row.removed_reason}
++          </p>
++        ) : null}
+ 
+-            <Badge tone="outline">v{row.version || "—"}</Badge>
++        <div className="mt-auto flex flex-wrap items-center gap-2 pt-1">
++          <Button disabled={busy} ghost size="sm" className="rounded-lg" onClick={onToggle}>
++            {busy ? <Spinner /> : null}
++            {toggleLabel}
++          </Button>
++
++          {tabPath ? (
++            <Link
++              className={cn(
++                "inline-flex items-center rounded-lg px-3 py-1.5",
++                "border border-current/25 hover:bg-current/10",
++                "font-mondwest text-display text-xs tracking-[0.1em]",
++              )}
++              to={tabPath}
++            >
++              {pp.openTab}
++            </Link>
++          ) : null}
+ 
+-            <Badge tone={badgeTone}>{row.runtime_status}</Badge>
++          <Button
++            disabled={busy}
++            ghost
++            size="sm"
++            className="ml-auto rounded-lg"
++            onClick={() => setDetailOpen(true)}
++          >
++            {pp.detailsBtn ?? "Details"}
++            <ChevronRight className="h-3.5 w-3.5" />
++          </Button>
++        </div>
++      </CardContent>
+ 
+-            {row.auth_required ? (
+-              <Badge tone="destructive">{t.pluginsPage.authRequired}</Badge>
++      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
++        <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto rounded-2xl">
++          <DialogHeader>
++            <DialogTitle>{row.name}</DialogTitle>
++            <DialogDescription>{dm?.label ?? row.source}</DialogDescription>
++          </DialogHeader>
++          <div className="flex flex-col gap-3 p-4">
++            {row.description ? (
++              <p className="text-xs leading-relaxed text-text-secondary">
++                {row.description}
++              </p>
+             ) : null}
+ 
+             {row.removed_reason ? (
+-              <Badge tone="destructive">
+-                {t.pluginsPage.catalogRemovedBadge ?? "Removed"}
+-              </Badge>
++              <p className="rounded-lg border border-destructive/50 px-3 py-2 text-xs text-destructive">
++                {pp.removedFromCatalog ?? "Removed from catalog"}: {row.removed_reason}
++              </p>
+             ) : null}
+-          </div>
+-
+-          <div className="flex flex-wrap items-center gap-2 shrink-0">
+-            {row.runtime_status === "enabled" ? (
+-              <Button
+-                disabled={busy}
+-                ghost
+-                size="sm"
+-                onClick={() => {
+-                  void setRuntimeLoading(row.name, async () => {
+-                    const res = await api.disableAgentPlugin(row.name);
+-                    showToast(
+-                      res.restart_required
+-                        ? t.pluginsPage.toggleTakesEffectAfterRestart
+-                        : t.pluginsPage.disableRuntime,
+-                      "success",
+-                    );
+-                  });
+-                }}
+-              >
+-                {t.pluginsPage.disableRuntime}
+-              </Button>
+-            ) : (
+-              <Button
+-                disabled={busy}
+-                ghost
+-                size="sm"
+-                onClick={() => {
+-                  void setRuntimeLoading(row.name, async () => {
+-                    const res = await api.enableAgentPlugin(row.name);
+-                    showToast(
+-                      res.restart_required
+-                        ? t.pluginsPage.toggleTakesEffectAfterRestart
+-                        : t.pluginsPage.enableRuntime,
+-                      "success",
+-                    );
+-                  });
+-                }}
+-              >
+-                {t.pluginsPage.enableRuntime}
+-              </Button>
+-            )}
+ 
+-            {tabPath ? (
++            <div className="flex flex-col gap-2">
++              <PluginDetailRow
++                label={pp.detailVersion ?? "Version"}
++                value={`v${row.version || "—"}`}
++              />
++              <PluginDetailRow label={pp.detailStatus ?? "Status"} value={row.runtime_status} />
++              <PluginDetailRow label={pp.detailSource ?? "Source"} value={row.source} />
++              {dm?.slots?.length ? (
++                <PluginDetailRow label={pp.dashboardSlots} value={dm.slots.join(", ")} />
++              ) : null}
++              <PluginDetailRow
++                label={pp.detailPath ?? "Install path"}
++                value={
++                  <code className="break-all font-mono text-[0.6875rem]">{row.path}</code>
++                }
++              />
++            </div>
+ 
+-              <Link
+-                className={cn(
+-                  "inline-flex items-center rounded-none px-3 py-1.5",
+-                  "border border-current/25 hover:bg-current/10",
+-                  "font-mondwest text-display text-xs tracking-[0.1em]",
+-                )}
+-                to={tabPath}
+-              >
+-                {t.pluginsPage.openTab}
+-              </Link>
++            {row.auth_required ? (
++              <CommandBlock label={pp.authRequiredHint} code={row.auth_command} />
+             ) : null}
+ 
++            {!row.has_dashboard_manifest && !dm ? (
++              <p className="text-xs italic text-text-disabled">{pp.noDashboardTab}</p>
++            ) : null}
++          </div>
++          <DialogFooter className="flex-wrap justify-start gap-2">
++            <Button disabled={busy} ghost size="sm" className="rounded-lg" onClick={onToggle}>
++              {busy ? <Spinner /> : null}
++              {toggleLabel}
++            </Button>
+             {row.can_update_git ? (
+-
+               <Button
+                 disabled={busy}
+                 ghost
+                 size="sm"
+-                onClick={() => {
+-                  void setRuntimeLoading(row.name, async () => {
+-                    const pp = t.pluginsPage;
+-                    const applied = await runDashboardPluginUpdate(row.name, {
+-                      consentBody: pp.updateConsentBody ?? en.pluginsPage.updateConsentBody!,
+-                      scanBody: pp.updateScanBody ?? en.pluginsPage.updateScanBody!,
+-                      scanBlocked: pp.updateScanBlocked ?? en.pluginsPage.updateScanBlocked!,
+-                    });
+-                    if (applied) showToast(pp.updateGit, "success");
+-                  });
+-                }}
++                className="rounded-lg"
++                onClick={onUpdateGit}
+               >
+                 {busy ? <Spinner /> : null}
+-                {t.pluginsPage.updateGit}
++                {pp.updateGit}
+               </Button>
+             ) : null}
+-
+             {row.has_dashboard_manifest ? (
+               <Button
+                 disabled={busy}
+                 ghost
+                 size="sm"
+-                title={row.user_hidden ? t.pluginsPage.showInSidebar : t.pluginsPage.hideFromSidebar}
+-                onClick={() => {
+-                  void setRuntimeLoading(row.name, async () => {
+-                    await api.setPluginVisibility(row.name, !row.user_hidden);
+-                  });
+-                }}
++                className="rounded-lg"
++                title={row.user_hidden ? pp.showInSidebar : pp.hideFromSidebar}
++                onClick={onVisibility}
+               >
+                 {row.user_hidden ? (
+                   <EyeOff className="h-3.5 w-3.5" />
+                 ) : (
+                   <Eye className="h-3.5 w-3.5" />
+                 )}
+-                {row.user_hidden ? t.pluginsPage.showInSidebar : t.pluginsPage.hideFromSidebar}
++                {row.user_hidden ? pp.showInSidebar : pp.hideFromSidebar}
+               </Button>
+             ) : null}
+-
+             {row.can_remove ? (
+-
+-
+               <Button
+                 destructive
+                 disabled={busy}
+                 ghost
+                 size="sm"
++                className="rounded-lg"
+                 onClick={() => setConfirmRemove(true)}
+               >
+-
+-                {busy ? <Spinner /> : <Trash2 className="h-3.5 w-3.5" />}
++                <Trash2 className="h-3.5 w-3.5" />
+               </Button>
+             ) : null}
+-          </div>
+-        </div>
+-
+-        {row.description ? (
+-          <p className="min-w-0 w-full text-xs tracking-[0.06em] text-text-secondary break-words">
+-            {row.description}
+-          </p>
+-        ) : null}
+-
+-        {row.removed_reason ? (
+-          <p className="border border-destructive/50 px-3 py-2 text-xs text-destructive">
+-            {t.pluginsPage.removedFromCatalog ?? "Removed from catalog"}: {row.removed_reason}
+-          </p>
+-        ) : null}
+-
+-        {dm?.slots?.length ? (
+-
+-          <p className="text-xs tracking-[0.05em] text-text-tertiary">
+-            {t.pluginsPage.dashboardSlots}: {dm.slots.join(", ")}
+-          </p>
+-        ) : null}
+-
+-        {row.auth_required ? (
+-          <CommandBlock
+-            label={t.pluginsPage.authRequiredHint}
+-            code={row.auth_command}
+-          />
+-        ) : null}
+-
+-        {!row.has_dashboard_manifest && !dm ? (
+-
+-
+-          <p className="text-xs italic text-text-disabled">
+-            {t.pluginsPage.noDashboardTab}
+-          </p>
+-        ) : null}
+-      </CardContent>
++          </DialogFooter>
++        </DialogContent>
++      </Dialog>
+ 
+       <ConfirmDialog
+         open={confirmRemove}
+         onCancel={() => setConfirmRemove(false)}
+-        onConfirm={() => {
+-          setConfirmRemove(false);
+-          void setRuntimeLoading(row.name, async () => {
+-            await api.removeAgentPlugin(row.name);
+-            showToast(`${row.name} removed`, "success");
+-          });
+-        }}
+-        title={t.pluginsPage.removeConfirm}
++        onConfirm={onRemove}
++        title={pp.removeConfirm}
+         description={`This will remove the "${row.name}" plugin from your agent.`}
+         destructive
+         confirmLabel={t.common.delete}
+@@ -1286,89 +1400,103 @@ function catalogDocsHref(url: string): string | null {
+ 
+ function CatalogEntryCard(props: CatalogEntryCardProps) {
+   const { busy, entry, onInstall, removed, t } = props;
++  const pp = t.pluginsPage;
++  const [detailOpen, setDetailOpen] = useState(false);
+ 
+   const caps = entry.capabilities;
+   const chips: string[] = [];
+-  if (caps.provides_tools.length) chips.push(`${caps.provides_tools.length} tools`);
+-  if (caps.provides_hooks.length) chips.push(`${caps.provides_hooks.length} hooks`);
++  if (caps.provides_tools.length)
++    chips.push(`${caps.provides_tools.length} ${pp.capTools ?? "tools"}`);
++  if (caps.provides_hooks.length)
++    chips.push(`${caps.provides_hooks.length} ${pp.capHooks ?? "hooks"}`);
+   if (caps.provides_middleware.length)
+-    chips.push(`${caps.provides_middleware.length} middleware`);
+-  if (caps.requires_env.length) chips.push(`env: ${caps.requires_env.join(", ")}`);
++    chips.push(`${caps.provides_middleware.length} ${pp.capMiddleware ?? "middleware"}`);
++  if (caps.requires_env.length)
++    chips.push(`${pp.capEnv ?? "env"}: ${caps.requires_env.join(", ")}`);
+ 
+   const isRemoved = removed !== null;
+   const docsHref = catalogDocsHref(entry.docs_url);
++  const repoHref = `${entry.repo.replace(/\.git$/, "")}/tree/${entry.sha}`;
++
++  const chipCls =
++    "rounded-md border border-border bg-background/40 px-2 py-1 font-mono text-[0.6875rem]";
++
++  const installButton = isRemoved ? null : entry.installed && !entry.update_available ? (
++    <Badge tone="success" className="rounded-full">
++      {pp.catalogInstalledBadge ?? "Installed ✓"}
++    </Badge>
++  ) : (
++    <Button disabled={busy} ghost size="sm" className="rounded-lg" onClick={onInstall}>
++      {busy ? <Spinner /> : null}
++      {entry.update_available
++        ? pp.catalogUpdateBtn ?? "Update available"
++        : pp.catalogInstallBtn ?? "Install"}
++    </Button>
++  );
+ 
+   return (
+-    <Card className={cn(busy ? "opacity-70" : undefined)}>
+-      <CardContent className="flex flex-col gap-3 px-6 py-4">
+-        <div className="flex flex-wrap items-start justify-between gap-4">
+-          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-3">
+-            <span className="truncate font-semibold">{entry.name}</span>
+-
+-            <Badge tone={entry.tier === "community" ? "secondary" : "success"}>
++    <Card
++      className={cn(
++        "h-full rounded-2xl transition-colors hover:border-current/25",
++        busy && "opacity-70",
++      )}
++    >
++      <CardContent className="flex flex-col gap-3 px-5 py-4">
++        <div className="flex items-start justify-between gap-3">
++          <div className="min-w-0 flex-1">
++            <h4 className="truncate font-semibold">{entry.name}</h4>
++            <p className="mt-0.5 truncate text-xs text-text-tertiary">{entry.maintainer}</p>
++          </div>
++          <div className="flex shrink-0 items-center gap-1.5">
++            <Badge
++              tone={entry.tier === "community" ? "secondary" : "success"}
++              className="rounded-full"
++            >
+               {entry.tier}
+             </Badge>
+-
+-            {entry.installed && entry.runtime_status ? (
+-              <Badge tone="outline">{entry.runtime_status}</Badge>
+-            ) : null}
+-
+             {isRemoved ? (
+-              <Badge tone="destructive">
+-                {t.pluginsPage.catalogRemovedBadge ?? "Removed"}
++              <Badge tone="destructive" className="rounded-full">
++                {pp.catalogRemovedBadge ?? "Removed"}
+               </Badge>
+-            ) : null}
+-          </div>
+-
+-          <div className="flex flex-wrap items-center gap-2 shrink-0">
+-            {isRemoved ? null : entry.installed && !entry.update_available ? (
+-              <Badge tone="success">
+-                {t.pluginsPage.catalogInstalledBadge ?? "Installed ✓"}
++            ) : entry.installed && entry.runtime_status ? (
++              <Badge tone="outline" className="rounded-full">
++                {entry.runtime_status}
+               </Badge>
+-            ) : (
+-              <Button disabled={busy} ghost size="sm" onClick={onInstall}>
+-                {busy ? <Spinner /> : null}
+-                {entry.update_available
+-                  ? t.pluginsPage.catalogUpdateBtn ?? "Update available"
+-                  : t.pluginsPage.catalogInstallBtn ?? "Install"}
+-              </Button>
+-            )}
++            ) : null}
+           </div>
+         </div>
+ 
+-        {isRemoved ? (
+-          <p className="border border-destructive/50 px-3 py-2 text-xs text-destructive">
+-            {t.pluginsPage.removedFromCatalog ?? "Removed from catalog"}
+-            {removed.reason ? `: ${removed.reason}` : ""}
+-            {removed.date ? ` (${removed.date})` : ""}
++        {entry.description ? (
++          <p className="line-clamp-2 text-xs tracking-[0.06em] text-text-secondary">
++            {entry.description}
+           </p>
+         ) : null}
+ 
+-        {entry.description ? (
+-          <p className="min-w-0 w-full text-xs tracking-[0.06em] text-text-secondary break-words">
+-            {entry.description}
++        {isRemoved ? (
++          <p className="rounded-lg border border-destructive/50 px-3 py-2 text-xs text-destructive">
++            {pp.removedFromCatalog ?? "Removed from catalog"}
++            {removed.reason ? `: ${removed.reason}` : ""}
++            {removed.date ? ` (${removed.date})` : ""}
+           </p>
+         ) : null}
+ 
+         {chips.length ? (
+-          <div className="flex flex-wrap gap-2">
+-            {chips.map((chip) => (
+-              <code
+-                key={chip}
+-                className="border border-border bg-background/40 px-2 py-1 font-mono text-[0.6875rem]"
+-              >
++          <div className="flex flex-wrap gap-1.5">
++            {chips.slice(0, 3).map((chip) => (
++              <code key={chip} className={chipCls}>
+                 {chip}
+               </code>
+             ))}
++            {chips.length > 3 ? (
++              <code className={chipCls}>+{chips.length - 3}</code>
++            ) : null}
+           </div>
+         ) : null}
+ 
+-        <div className="flex flex-wrap items-center gap-3 text-xs text-text-tertiary">
+-          <span>{entry.maintainer}</span>
+-
++        <div className="mt-auto flex items-center gap-2 pt-1">
+           <a
+-            className="inline-flex items-center gap-1 font-mono underline"
+-            href={`${entry.repo.replace(/\.git$/, "")}/tree/${entry.sha}`}
++            className="inline-flex items-center gap-1 font-mono text-xs text-text-tertiary underline"
++            href={repoHref}
+             target="_blank"
+             rel="noreferrer"
+           >
+@@ -1378,25 +1506,102 @@ function CatalogEntryCard(props: CatalogEntryCardProps) {
+ 
+           {docsHref ? (
+             <a
+-              className="inline-flex items-center gap-1 underline"
++              className="inline-flex items-center gap-1 text-xs text-text-tertiary underline"
+               href={docsHref}
+               target="_blank"
+               rel="noreferrer"
+             >
+-              docs
++              {pp.detailDocs ?? "docs"}
+               <ExternalLink className="h-3 w-3 opacity-65" />
+             </a>
+           ) : null}
+ 
+-          {entry.requires_hermes ? (
+-            <span>hermes {entry.requires_hermes}</span>
+-          ) : null}
+-
+-          {entry.platforms.length ? (
+-            <span>{entry.platforms.join(", ")}</span>
+-          ) : null}
++          <div className="ml-auto flex items-center gap-2">
++            {installButton}
++            <Button ghost size="sm" className="rounded-lg" onClick={() => setDetailOpen(true)}>
++              {pp.detailsBtn ?? "Details"}
++              <ChevronRight className="h-3.5 w-3.5" />
++            </Button>
++          </div>
+         </div>
+       </CardContent>
++
++      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
++        <DialogContent className="max-h-[85vh] max-w-lg overflow-y-auto rounded-2xl">
++          <DialogHeader>
++            <DialogTitle>{entry.name}</DialogTitle>
++            <DialogDescription>
++              {entry.maintainer} · {entry.tier}
++            </DialogDescription>
++          </DialogHeader>
++          <div className="flex flex-col gap-3 p-4">
++            {entry.description ? (
++              <p className="text-xs leading-relaxed text-text-secondary">
++                {entry.description}
++              </p>
++            ) : null}
++
++            {isRemoved ? (
++              <p className="rounded-lg border border-destructive/50 px-3 py-2 text-xs text-destructive">
++                {pp.removedFromCatalog ?? "Removed from catalog"}
++                {removed.reason ? `: ${removed.reason}` : ""}
++                {removed.date ? ` (${removed.date})` : ""}
++              </p>
++            ) : null}
++
++            {chips.length ? (
++              <div className="flex flex-wrap gap-1.5">
++                {chips.map((chip) => (
++                  <code key={chip} className={chipCls}>
++                    {chip}
++                  </code>
++                ))}
++              </div>
++            ) : null}
++
++            <div className="flex flex-col gap-2">
++              <PluginDetailRow
++                label={pp.detailMaintainer ?? "Maintainer"}
++                value={entry.maintainer}
++              />
++              <PluginDetailRow
++                label={pp.detailRepo ?? "Repository"}
++                value={
++                  <a
++                    className="break-all font-mono text-[0.6875rem] underline"
++                    href={repoHref}
++                    target="_blank"
++                    rel="noreferrer"
++                  >
++                    {entry.repo}
++                  </a>
++                }
++              />
++              <PluginDetailRow
++                label={pp.detailRequiresHermes ?? "Requires Hermes"}
++                value={entry.requires_hermes || "—"}
++              />
++              <PluginDetailRow
++                label={pp.detailPlatforms ?? "Platforms"}
++                value={entry.platforms.length ? entry.platforms.join(", ") : "—"}
++              />
++            </div>
++
++            {docsHref ? (
++              <a
++                className="inline-flex w-fit items-center gap-1 text-xs text-text-secondary underline"
++                href={docsHref}
++                target="_blank"
++                rel="noreferrer"
++              >
++                {pp.detailDocs ?? "Documentation"}
++                <ExternalLink className="h-3 w-3 opacity-65" />
++              </a>
++            ) : null}
++          </div>
++          <DialogFooter className="flex-wrap justify-start gap-2">{installButton}</DialogFooter>
++        </DialogContent>
++      </Dialog>
+     </Card>
+   );
+ }
