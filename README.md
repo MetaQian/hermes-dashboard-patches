@@ -45,7 +45,7 @@ UI 库（`@nous-research/ui`）的 Card / Button / Input / Dialog / Switch 等�
 原来左侧导航栏下半部有一整块系统区（「系统」标题、网关状态 + 活跃会话数、重启网关 / 更新 Hermes 按钮、折叠态的网关小圆点），底部还有语言切换和登录用户信息。现在全部移到了**每个页面顶部 banner 的最右侧**（`GatewayBannerActions`，挂在 `PageHeaderProvider` 新增的 `actions` prop 上，全路由通用），顺序：状态胶囊 → 重启网关 → 更新 Hermes → 主题切换 → 语言切换 → 用户胶囊：
 
 - 状态胶囊：网关状态圆点（绿/黄/红）+「系统 运行中 · 活跃会话：N」，点击跳 /sessions；窄屏只留圆点
-- 重启网关 / 更新 Hermes 图标按钮（更新项仍只在 `can_update_hermes` 时出现），运行中显示转圈，确认弹窗逻辑与原侧边栏完全一致
+- 重启网关 / 更新 Hermes 文字按钮（小图标 + 文字，原为纯图标按钮，2026-11-27 应用户要求改为文字；`size="sm"` + `h-8 text-xs`；更新项仍只在 `can_update_hermes` 时出现），运行中显示转圈，确认弹窗逻辑与原侧边栏完全一致
 - 主题切换 / 语言切换：新增 `dropDown` prop（`ThemeSwitcher.tsx` / `LanguageSwitcher.tsx`），下拉 `createPortal` 到 `document.body` + `fixed z-[100]`，按按钮 `getBoundingClientRect()` 定位向下展开。原因：banner 在 header 内（`sm:overflow-hidden`），原来的 `absolute` 下拉会被 main 内容遮挡；侧边栏/移动端原有 `dropUp`/sheet 行为不变
 - 用户胶囊：`AuthWidget` 新增 `variant="banner"`（单行紧凑胶囊，`UserRound` + 用户名 + 登出图标）；默认 `sidebar` 行为不变。loopback 模式 / 401 时仍隐藏
 - 侧边栏相应删掉了系统区、主题切换、语言切换、用户信息；`header-right` 插件槽行改为 `SidebarHeaderRightRow`（`App.tsx`）——仅当有插件实际注册内容时才渲染，插件为空时不再留一条空白行

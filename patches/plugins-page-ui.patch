@@ -1,5 +1,5 @@
 diff --git a/web/src/App.tsx b/web/src/App.tsx
-index 0553271d4c7..1bf6f5d3adb 100644
+index 0553271d4c7..1e953e32fe6 100644
 --- a/web/src/App.tsx
 +++ b/web/src/App.tsx
 @@ -17,6 +17,7 @@ import {
@@ -176,7 +176,7 @@ index 0553271d4c7..1bf6f5d3adb 100644
    const { t } = useI18n();
    const navigate = useNavigate();
    const { activeAction, isBusy, isRunning, pendingAction, runAction } =
-@@ -1026,64 +1023,97 @@ function SidebarSystemActions({
+@@ -1026,63 +1023,96 @@ function SidebarSystemActions({
      }
      void runAction(action);
      navigate("/sessions");
@@ -223,6 +223,24 @@ index 0553271d4c7..1bf6f5d3adb 100644
 -      >
 -        {t.app.system}
 -      </span>
+-
+-      <div className={cn(collapsed && "lg:hidden")}>
+-        <SidebarStatusStrip status={status} />
+-      </div>
+-
+-      <GatewayDot collapsed={collapsed} status={status} tooltipWarmRef={tooltipWarmRef} />
+-
+-      <ul className="flex flex-col">
+-        {items.map((item) => (
+-          <SystemActionButton
+-            key={item.action}
+-            collapsed={collapsed}
+-            disabled={isBusy && !(pendingAction === item.action || (activeAction === item.action && isRunning))}
+-            tooltipWarmRef={tooltipWarmRef}
+-            isPending={pendingAction === item.action}
+-            isRunning={activeAction === item.action && isRunning && pendingAction !== item.action}
+-            item={item}
+-            onClick={() => handleClick(item.action)}
 +      <div className="flex items-center gap-1.5">
 +        <Link
 +          to="/sessions"
@@ -240,7 +258,10 @@ index 0553271d4c7..1bf6f5d3adb 100644
 +              "h-2 w-2 shrink-0 rounded-full",
 +              gw ? (toneDot[gw.tone] ?? "bg-muted-foreground") : "bg-midground/20",
 +            )}
-+          />
+           />
+-        ))}
+-      </ul>
+-    </div>
 +          <span className="hidden items-center gap-1.5 whitespace-nowrap text-xs sm:flex">
 +            <span className="text-text-tertiary">{t.app.system}</span>
 +            <span className={cn("font-medium", gw?.tone)}>
@@ -263,56 +284,35 @@ index 0553271d4c7..1bf6f5d3adb 100644
 +            <Button
 +              key={item.action}
 +              ghost
-+              size="icon"
-+              className="text-text-secondary hover:text-midground"
++              size="sm"
++              className="h-8 gap-1.5 px-2.5 text-xs text-text-secondary hover:text-midground"
 +              disabled={isBusy && !busy}
-+              title={label}
 +              aria-label={label}
 +              aria-busy={busy}
 +              onClick={() => handleClick(item.action)}
 +            >
 +              {busy ? (
-+                <Spinner className="h-4 w-4" />
++                <Spinner className="h-3.5 w-3.5" />
 +              ) : (
 +                <Icon
 +                  className={cn(
-+                    "h-4 w-4",
++                    "h-3.5 w-3.5",
 +                    isActionRunning && !item.spin && "animate-pulse",
 +                  )}
 +                />
 +              )}
++              <span className="whitespace-nowrap">{label}</span>
 +            </Button>
 +          );
 +        })}
- 
--      <div className={cn(collapsed && "lg:hidden")}>
--        <SidebarStatusStrip status={status} />
++
 +        <ThemeSwitcher dropDown />
 +        <LanguageSwitcher dropDown />
 +        <AuthWidget variant="banner" />
-       </div>
++      </div>
  
--      <GatewayDot collapsed={collapsed} status={status} tooltipWarmRef={tooltipWarmRef} />
--
--      <ul className="flex flex-col">
--        {items.map((item) => (
--          <SystemActionButton
--            key={item.action}
--            collapsed={collapsed}
--            disabled={isBusy && !(pendingAction === item.action || (activeAction === item.action && isRunning))}
--            tooltipWarmRef={tooltipWarmRef}
--            isPending={pendingAction === item.action}
--            isRunning={activeAction === item.action && isRunning && pendingAction !== item.action}
--            item={item}
--            onClick={() => handleClick(item.action)}
--          />
--        ))}
--      </ul>
--    </div>
--
      <ConfirmDialog
        cancelLabel={t.common.cancel}
-       confirmLabel={sharedGateway ? "Restart all" : t.status.restartGateway}
 @@ -1120,193 +1150,6 @@ function SidebarSystemActions({
    );
  }
