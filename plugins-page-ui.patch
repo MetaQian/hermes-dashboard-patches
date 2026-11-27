@@ -1,5 +1,5 @@
 diff --git a/web/src/App.tsx b/web/src/App.tsx
-index 0553271d4c7..9f53b946103 100644
+index 0553271d4c7..1bf6f5d3adb 100644
 --- a/web/src/App.tsx
 +++ b/web/src/App.tsx
 @@ -17,6 +17,7 @@ import {
@@ -19,6 +19,15 @@ index 0553271d4c7..9f53b946103 100644
  import { useBelowBreakpoint } from "@nous-research/ui/hooks/use-below-breakpoint";
  import { useSidebarStatus } from "@/hooks/useSidebarStatus";
  import { AuthWidget } from "@/components/AuthWidget";
+@@ -99,7 +100,7 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+ import { ThemeSwitcher } from "@/components/ThemeSwitcher";
+ import { useI18n } from "@/i18n";
+ import type { Translations } from "@/i18n/types";
+-import { PluginPage, PluginSlot, usePlugins } from "@/plugins";
++import { PluginPage, PluginSlot, getSlotEntries, onSlotRegistered, usePlugins } from "@/plugins";
+ import type { PluginManifest } from "@/plugins";
+ import { useTheme } from "@/themes";
+ import { isDashboardEmbeddedChatEnabled } from "@/lib/dashboard-flags";
 @@ -190,7 +191,7 @@ const BUILTIN_NAV_REST: NavItem[] = [
      label: "Sessions",
      icon: MessageSquare,
@@ -46,7 +55,7 @@ index 0553271d4c7..9f53b946103 100644
    {
      path: "/docs",
      labelKey: "documentation",
-@@ -676,13 +677,6 @@ export default function App() {
+@@ -676,48 +677,7 @@ export default function App() {
  
              <CockpitSidebarSlot layoutVariant={layoutVariant} />
  
@@ -57,13 +66,24 @@ index 0553271d4c7..9f53b946103 100644
 -              tooltipWarmRef={tooltipWarmRef}
 -            />
 -
-             <div
-               className={cn(
-                 "flex shrink-0 items-center gap-2",
-@@ -701,14 +695,6 @@ export default function App() {
-               >
-                 <PluginSlot name="header-right" />
- 
+-            <div
+-              className={cn(
+-                "flex shrink-0 items-center gap-2",
+-                "px-3 py-2",
+-                "border-t border-current/20",
+-                isDesktopCollapsed
+-                  ? "lg:flex-col lg:items-start lg:gap-3 lg:py-3"
+-                  : "justify-between",
+-              )}
+-            >
+-              <div
+-                className={cn(
+-                  "flex min-w-0 items-center gap-2",
+-                  isDesktopCollapsed && "lg:flex-col lg:items-start",
+-                )}
+-              >
+-                <PluginSlot name="header-right" />
+-
 -                <SidebarIconWithTooltip
 -                  collapsed={isDesktopCollapsed}
 -                  label={t.theme?.switchTheme ?? "Switch theme"}
@@ -72,10 +92,25 @@ index 0553271d4c7..9f53b946103 100644
 -                  <ThemeSwitcher collapsed={isDesktopCollapsed} dropUp />
 -                </SidebarIconWithTooltip>
 -
-                 <SidebarIconWithTooltip
-                   collapsed={isDesktopCollapsed}
-                   label={t.language.switchTo}
-@@ -730,7 +716,10 @@ export default function App() {
+-                <SidebarIconWithTooltip
+-                  collapsed={isDesktopCollapsed}
+-                  label={t.language.switchTo}
+-                  tooltipWarmRef={tooltipWarmRef}
+-                >
+-                  <LanguageSwitcher collapsed={isDesktopCollapsed} dropUp />
+-                </SidebarIconWithTooltip>
+-              </div>
+-            </div>
++            <SidebarHeaderRightRow collapsed={isDesktopCollapsed} />
+ 
+             <div
+               className={cn(
+@@ -725,12 +685,14 @@ export default function App() {
+                 isDesktopCollapsed && "lg:hidden",
+               )}
+             >
+-              <AuthWidget />
+               <SidebarFooter status={sidebarStatus} />
              </div>
            </aside>
  
@@ -87,7 +122,7 @@ index 0553271d4c7..9f53b946103 100644
              <div
                className={cn(
                  "relative z-2 flex min-w-0 min-h-0 flex-1 flex-col",
-@@ -940,12 +929,11 @@ function SidebarPluginNav({
+@@ -940,12 +902,47 @@ function SidebarPluginNav({
    );
  }
  
@@ -101,11 +136,47 @@ index 0553271d4c7..9f53b946103 100644
 + * System status + gateway actions, rendered in the top-right of the page
 + * banner (moved out of the left sidebar).
 + */
++/** Row for the `header-right` plugin slot; renders only while a plugin has
++ *  actually registered content, so it never leaves an empty spacer row. */
++function SidebarHeaderRightRow({ collapsed }: { collapsed: boolean }) {
++  const [hasEntries, setHasEntries] = useState(
++    () => getSlotEntries("header-right").length > 0,
++  );
++  useEffect(() => {
++    const update = () =>
++      setHasEntries(getSlotEntries("header-right").length > 0);
++    update();
++    return onSlotRegistered(update);
++  }, []);
++  if (!hasEntries) return null;
++  return (
++    <div
++      className={cn(
++        "flex shrink-0 items-center gap-2",
++        "px-3 py-2",
++        "border-t border-current/20",
++        collapsed
++          ? "lg:flex-col lg:items-start lg:gap-3 lg:py-3"
++          : "justify-between",
++      )}
++    >
++      <div
++        className={cn(
++          "flex min-w-0 items-center gap-2",
++          collapsed && "lg:flex-col lg:items-start",
++        )}
++      >
++        <PluginSlot name="header-right" />
++      </div>
++    </div>
++  );
++}
++
 +function GatewayBannerActions({ status }: { status: StatusResponse | null }) {
    const { t } = useI18n();
    const navigate = useNavigate();
    const { activeAction, isBusy, isRunning, pendingAction, runAction } =
-@@ -1026,64 +1014,95 @@ function SidebarSystemActions({
+@@ -1026,64 +1023,97 @@ function SidebarSystemActions({
      }
      void runAction(action);
      navigate("/sessions");
@@ -216,7 +287,9 @@ index 0553271d4c7..9f53b946103 100644
  
 -      <div className={cn(collapsed && "lg:hidden")}>
 -        <SidebarStatusStrip status={status} />
-+        <ThemeSwitcher />
++        <ThemeSwitcher dropDown />
++        <LanguageSwitcher dropDown />
++        <AuthWidget variant="banner" />
        </div>
  
 -      <GatewayDot collapsed={collapsed} status={status} tooltipWarmRef={tooltipWarmRef} />
@@ -240,7 +313,7 @@ index 0553271d4c7..9f53b946103 100644
      <ConfirmDialog
        cancelLabel={t.common.cancel}
        confirmLabel={sharedGateway ? "Restart all" : t.status.restartGateway}
-@@ -1120,94 +1139,6 @@ function SidebarSystemActions({
+@@ -1120,193 +1150,6 @@ function SidebarSystemActions({
    );
  }
  
@@ -332,13 +405,48 @@ index 0553271d4c7..9f53b946103 100644
 -  );
 -}
 -
- function SidebarIconWithTooltip({
-   children,
-   collapsed,
-@@ -1250,64 +1181,6 @@ function SidebarIconWithTooltip({
-   );
- }
- 
+-function SidebarIconWithTooltip({
+-  children,
+-  collapsed,
+-  label,
+-  tooltipWarmRef,
+-}: SidebarIconWithTooltipProps) {
+-  const [hovered, setHovered] = useState(false);
+-  const [tooltipAnchor, setTooltipAnchor] = useState<HTMLElement | null>(null);
+-  const showTooltip = (event: MouseEvent<HTMLDivElement>) => {
+-    setHovered(true);
+-    setTooltipAnchor(event.currentTarget);
+-  };
+-  const hideTooltip = () => {
+-    setHovered(false);
+-    setTooltipAnchor(null);
+-  };
+-
+-  return (
+-    <div
+-      className={cn(
+-        "relative w-fit",
+-        collapsed && "group/icon",
+-      )}
+-      onMouseEnter={collapsed ? showTooltip : undefined}
+-      onMouseLeave={collapsed ? hideTooltip : undefined}
+-    >
+-      {children}
+-
+-      {collapsed && (
+-        <span
+-          aria-hidden
+-          className="absolute inset-y-0 inset-x-[-0.375rem] bg-midground opacity-0 pointer-events-none transition-opacity duration-200 group-hover/icon:opacity-5 hidden lg:block"
+-        />
+-      )}
+-
+-      {collapsed && hovered && tooltipAnchor && (
+-        <SidebarTooltip anchor={tooltipAnchor} label={label} warmRef={tooltipWarmRef} />
+-      )}
+-    </div>
+-  );
+-}
+-
 -function GatewayDot({ collapsed, status, tooltipWarmRef }: GatewayDotProps) {
 -  const { t } = useI18n();
 -  const [hovered, setHovered] = useState(false);
@@ -396,11 +504,10 @@ index 0553271d4c7..9f53b946103 100644
 -    </div>
 -  );
 -}
--
+ 
  function SidebarTooltip({ anchor, label, warmRef }: SidebarTooltipProps) {
    const rect = anchor.getBoundingClientRect();
-   const sidebar = document.getElementById("app-sidebar");
-@@ -1351,12 +1224,6 @@ function SidebarTooltip({ anchor, label, warmRef }: SidebarTooltipProps) {
+@@ -1351,12 +1194,6 @@ function SidebarTooltip({ anchor, label, warmRef }: SidebarTooltipProps) {
  
  type TooltipWarmRef = React.RefObject<number>;
  
@@ -413,7 +520,21 @@ index 0553271d4c7..9f53b946103 100644
  interface NavItem {
    icon: ComponentType<{ className?: string }>;
    label: string;
-@@ -1379,29 +1246,12 @@ interface SidebarNavLinkProps {
+@@ -1364,13 +1201,6 @@ interface NavItem {
+   path: string;
+ }
+ 
+-interface SidebarIconWithTooltipProps {
+-  children: ReactNode;
+-  collapsed: boolean;
+-  label: string;
+-  tooltipWarmRef: TooltipWarmRef;
+-}
+-
+ interface SidebarNavLinkProps {
+   closeMobile: () => void;
+   collapsed: boolean;
+@@ -1379,29 +1209,12 @@ interface SidebarNavLinkProps {
    tooltipWarmRef: TooltipWarmRef;
  }
  
@@ -443,6 +564,159 @@ index 0553271d4c7..9f53b946103 100644
  interface SystemActionItem {
    action: SystemAction;
    icon: ComponentType<{ className?: string }>;
+diff --git a/web/src/components/AuthWidget.tsx b/web/src/components/AuthWidget.tsx
+index 87307b060f0..04231ccd9fe 100644
+--- a/web/src/components/AuthWidget.tsx
++++ b/web/src/components/AuthWidget.tsx
+@@ -28,10 +28,13 @@ import { api, type AuthMeResponse } from "@/lib/api";
+ import { ApiError } from "@/lib/api-error";
+ import { shouldHideAuthWidget } from "./auth-widget-visibility";
+ import { cn } from "@/lib/utils";
+-import { LogOut } from "lucide-react";
++import { LogOut, UserRound } from "lucide-react";
+ 
+ interface AuthWidgetProps {
+   className?: string;
++  /** "sidebar" (default) keeps the two-line row; "banner" renders a compact
++   *  single-line chip meant for the top page banner. */
++  variant?: "sidebar" | "banner";
+ }
+ 
+ /** Truncate ``user_id`` to fit a small UI without revealing the full
+@@ -42,7 +45,7 @@ function truncateUserId(id: string): string {
+   return `${id.slice(0, 14)}…`;
+ }
+ 
+-export function AuthWidget({ className }: AuthWidgetProps) {
++export function AuthWidget({ className, variant = "sidebar" }: AuthWidgetProps) {
+   const [me, setMe] = useState<AuthMeResponse | null>(null);
+   const [hidden, setHidden] = useState(false);
+   const [error, setError] = useState<string | null>(null);
+@@ -80,6 +83,7 @@ export function AuthWidget({ className }: AuthWidgetProps) {
+   if (hidden) return null;
+ 
+   if (error) {
++    if (variant === "banner") return null;
+     return (
+       <div
+         className={cn(
+@@ -93,8 +97,10 @@ export function AuthWidget({ className }: AuthWidgetProps) {
+   }
+ 
+   if (!me) {
+-    // Loading. Reserve the row height so the sidebar doesn't flicker
+-    // when the data arrives.
++    // Loading. The banner chip renders nothing while pending (it would
++    // flicker at the top of every page); the sidebar reserves row height
++    // so it doesn't jump when the data arrives.
++    if (variant === "banner") return null;
+     return (
+       <div
+         className={cn(
+@@ -117,6 +123,43 @@ export function AuthWidget({ className }: AuthWidgetProps) {
+   // Portal that adds a userinfo endpoint (OQ-C1 in the plan).
+   const label = me.display_name || me.email || truncateUserId(me.user_id);
+ 
++  if (variant === "banner") {
++    return (
++      <div
++        className={cn(
++          "flex shrink-0 items-center gap-1.5",
++          "rounded-lg border border-current/10 py-1 pl-2 pr-1",
++          "text-[0.65rem] tracking-[0.05em]",
++          className,
++        )}
++        role="status"
++        aria-label={`Logged in as ${label}`}
++      >
++        <UserRound className="h-3.5 w-3.5 shrink-0 text-muted-foreground/80" />
++        <span
++          className="hidden max-w-[9rem] truncate font-mono text-foreground/90 md:inline"
++          title={`${me.user_id} · via ${me.provider}`}
++        >
++          {label}
++        </span>
++        <button
++          type="button"
++          onClick={handleLogout}
++          className={cn(
++            "shrink-0 rounded-md p-1 text-muted-foreground/70",
++            "min-h-[24px] min-w-[24px]",
++            "transition-colors hover:bg-current/10 hover:text-foreground",
++            "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-current/40",
++          )}
++          aria-label="Log out"
++          title="Log out"
++        >
++          <LogOut className="h-3.5 w-3.5" />
++        </button>
++      </div>
++    );
++  }
++
+   return (
+     <div
+       className={cn(
+diff --git a/web/src/components/LanguageSwitcher.tsx b/web/src/components/LanguageSwitcher.tsx
+index 02d8d0d4f60..6a44951c08f 100644
+--- a/web/src/components/LanguageSwitcher.tsx
++++ b/web/src/components/LanguageSwitcher.tsx
+@@ -27,7 +27,11 @@ import { cn } from "@/lib/utils";
+  * viewport / overflow ancestors. Below the `sm` breakpoint, `dropUp` uses a
+  * bottom sheet portaled to `document.body` instead of an anchored dropdown.
+  */
+-export function LanguageSwitcher({ collapsed = false, dropUp = false }: LanguageSwitcherProps) {
++export function LanguageSwitcher({
++  collapsed = false,
++  dropUp = false,
++  dropDown = false,
++}: LanguageSwitcherProps) {
+   const { locale, setLocale, t } = useI18n();
+   const [open, setOpen] = useState(false);
+   const containerRef = useRef<HTMLDivElement>(null);
+@@ -111,13 +115,23 @@ export function LanguageSwitcher({ collapsed = false, dropUp = false }: Language
+             aria-label={sheetTitle}
+             className={cn(
+               "min-w-[10rem] border border-border bg-popover shadow-md py-1 max-h-80 overflow-y-auto",
+-              dropUp ? "fixed z-[100]" : "absolute z-50 right-0 top-full mt-1",
++              dropUp || dropDown
++                ? "fixed z-[100]"
++                : "absolute z-50 right-0 top-full mt-1",
+             )}
+             role="listbox"
+             style={
+               dropUp && rect
+                 ? { bottom: window.innerHeight - rect.top + 4, left: rect.left }
+-                : undefined
++                : dropDown && rect
++                  ? {
++                      top: rect.bottom + 4,
++                      left: Math.max(
++                        8,
++                        Math.min(rect.right - 160, window.innerWidth - 168),
++                      ),
++                    }
++                  : undefined
+             }
+           >
+             <LanguageSwitcherOptions
+@@ -128,7 +142,9 @@ export function LanguageSwitcher({ collapsed = false, dropUp = false }: Language
+             />
+           </div>
+         );
+-        return dropUp ? createPortal(dropdown, document.body) : dropdown;
++        return dropUp || dropDown
++          ? createPortal(dropdown, document.body)
++          : dropdown;
+       })()}
+     </div>
+   );
+@@ -182,4 +198,5 @@ interface LanguageSwitcherOptionsProps {
+ interface LanguageSwitcherProps {
+   collapsed?: boolean;
+   dropUp?: boolean;
++  dropDown?: boolean;
+ }
 diff --git a/web/src/components/OAuthProvidersCard.tsx b/web/src/components/OAuthProvidersCard.tsx
 index db19636ebdc..927ab34ac07 100644
 --- a/web/src/components/OAuthProvidersCard.tsx
@@ -456,8 +730,72 @@ index db19636ebdc..927ab34ac07 100644
        <CardHeader>
          <div className="flex items-center justify-between">
            <div className="flex items-center gap-2">
+diff --git a/web/src/components/ThemeSwitcher.tsx b/web/src/components/ThemeSwitcher.tsx
+index 6c50e014837..63741a090a8 100644
+--- a/web/src/components/ThemeSwitcher.tsx
++++ b/web/src/components/ThemeSwitcher.tsx
+@@ -24,7 +24,11 @@ import { cn } from "@/lib/utils";
+  * bottom sheet portaled to `document.body` so the picker is not clipped by
+  * the sidebar (same idea as a responsive Drawer).
+  */
+-export function ThemeSwitcher({ collapsed = false, dropUp = false }: ThemeSwitcherProps) {
++export function ThemeSwitcher({
++  collapsed = false,
++  dropUp = false,
++  dropDown = false,
++}: ThemeSwitcherProps) {
+   const { themeName, availableThemes, setTheme, fontId, fontChoices, setFont } = useTheme();
+   const { t } = useI18n();
+   const [open, setOpen] = useState(false);
+@@ -119,16 +123,26 @@ export function ThemeSwitcher({ collapsed = false, dropUp = false }: ThemeSwitch
+             ref={dropdownRef}
+             aria-label={sheetTitle}
+             className={cn(
+-              "min-w-[240px] max-h-[70dvh] overflow-y-auto",
++              "min-w-[240px] max-w-[min(340px,calc(100vw-16px))] max-h-[70dvh] overflow-y-auto",
+               "border border-current/20 bg-background-base/95",
+               "shadow-[0_12px_32px_-8px_rgba(0,0,0,0.6)]",
+-              dropUp ? "fixed z-[100]" : "absolute z-50 right-0 top-full mt-1",
++              dropUp || dropDown
++                ? "fixed z-[100]"
++                : "absolute z-50 right-0 top-full mt-1",
+             )}
+             role="listbox"
+             style={
+               dropUp && rect
+                 ? { bottom: window.innerHeight - rect.top + 4, left: rect.left }
+-                : undefined
++                : dropDown && rect
++                  ? {
++                      top: rect.bottom + 4,
++                      left: Math.max(
++                        8,
++                        Math.min(rect.right - 240, window.innerWidth - 348),
++                      ),
++                    }
++                  : undefined
+             }
+           >
+             <div className="border-b border-current/20 px-3 py-2">
+@@ -152,7 +166,9 @@ export function ThemeSwitcher({ collapsed = false, dropUp = false }: ThemeSwitch
+             />
+           </div>
+         );
+-        return dropUp ? createPortal(dropdown, document.body) : dropdown;
++        return dropUp || dropDown
++          ? createPortal(dropdown, document.body)
++          : dropdown;
+       })()}
+     </div>
+   );
+@@ -355,4 +371,5 @@ interface FontSectionProps {
+ interface ThemeSwitcherProps {
+   collapsed?: boolean;
+   dropUp?: boolean;
++  dropDown?: boolean;
+ }
 diff --git a/web/src/contexts/PageHeaderProvider.tsx b/web/src/contexts/PageHeaderProvider.tsx
-index 3cb6ffebfc7..ad22507b730 100644
+index 3cb6ffebfc7..8d9b95d8b9c 100644
 --- a/web/src/contexts/PageHeaderProvider.tsx
 +++ b/web/src/contexts/PageHeaderProvider.tsx
 @@ -8,9 +8,12 @@ import { useI18n } from "@/i18n";
@@ -473,18 +811,13 @@ index 3cb6ffebfc7..ad22507b730 100644
  }) {
    const { pathname } = useLocation();
    const { t } = useI18n();
-@@ -117,6 +120,17 @@ export function PageHeaderProvider({
+@@ -117,6 +120,12 @@ export function PageHeaderProvider({
                  {end}
                </div>
              ) : null}
 +
 +            {actions ? (
-+              <div
-+                className={cn(
-+                  "flex shrink-0 items-center",
-+                  isChatRoute ? "w-auto justify-end" : "w-full justify-end",
-+                )}
-+              >
++              <div className="flex shrink-0 items-center justify-end">
 +                {actions}
 +              </div>
 +            ) : null}

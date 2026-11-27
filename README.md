@@ -7,7 +7,7 @@
 
 | 补丁文件 | 说明 | 基础版本 | 涉及文件 |
 | --- | --- | --- | --- |
-| `patches/plugins-page-ui.patch` | dashboard 前端累计定制补丁（每次改动整体重新导出，`git apply --check -R` 校验过），当前含七块：①插件管理页 UI 改造（Tab 化 + 卡片网格 +「固定提交」钉版 + 详情弹窗）；②多页面中文化（定时任务 / MCP / Webhooks / 频道 / 技能 / 会话页，可选 i18n key + `?? "英文fallback"`，共享 `uiKit.ts` 的 `BADGE_CN` 徽标样式）；③会话列表修剪（`session-prune.ts`）；④**全站圆角**（见下节）；⑤导航栏汉化（文件 / 频道 / Webhooks / 配对 / 系统 5 项 + 页面标题同步）；⑥**系统区移到顶部 banner 右侧**（见下节）；⑦代码 chip 去底色（MCP 页 + OAuth 提供商卡片） | `b579fe6a938`（v0.23.4+585） | `web/src/App.tsx`、`web/src/index.css`、`web/src/components/OAuthProvidersCard.tsx`、`web/src/contexts/PageHeaderProvider.tsx`、`web/src/i18n/{types,en,zh}.ts`、`web/src/lib/{api,session-prune,resolve-page-title}.ts`、`web/src/pages/{PluginsPage,PluginsPage_updateAll,AnalyticsPage,ChannelsPage,ChatPage,ConfigPage,CronPage,EnvPage,McpPage,ModelsPage,ProfileBuilderPage,SessionsPage,SkillsPage,WebhooksPage,uiKit}.tsx`（共 25 个文件） |
+| `patches/plugins-page-ui.patch` | dashboard 前端累计定制补丁（每次改动整体重新导出，`git apply --check -R` 校验过），当前含九块：①插件管理页 UI 改造（Tab 化 + 卡片网格 +「固定提交」钉版 + 详情弹窗）；②多页面中文化（定时任务 / MCP / Webhooks / 频道 / 技能 / 会话页，可选 i18n key + `?? "英文fallback"`，共享 `uiKit.ts` 的 `BADGE_CN` 徽标样式）；③会话列表修剪（`session-prune.ts`）；④**全站圆角**（见下节）；⑤导航栏汉化（文件 / 频道 / Webhooks / 配对 / 系统 5 项 + 页面标题同步）；⑥**顶部 banner 控制区**：系统区 + 主题 / 语言切换 + 登录用户信息全部移到页面 banner 右侧（见下节）；⑦代码 chip 去底色（MCP 页 + OAuth 提供商卡片）；⑧主题 / 语言下拉 **portal 到 body**（`fixed z-[100]`），修复下拉被 main 内容遮挡；⑨`AuthWidget` 新增 `variant="banner"` 紧凑单行用户胶囊 | `b579fe6a938`（v0.23.4+585） | `web/src/App.tsx`、`web/src/index.css`、`web/src/components/{AuthWidget,LanguageSwitcher,OAuthProvidersCard,ThemeSwitcher}.tsx`、`web/src/contexts/PageHeaderProvider.tsx`、`web/src/i18n/{types,en,zh}.ts`、`web/src/lib/{api,session-prune,resolve-page-title}.ts`、`web/src/pages/{PluginsPage,PluginsPage_updateAll,AnalyticsPage,ChannelsPage,ChatPage,ConfigPage,CronPage,EnvPage,McpPage,ModelsPage,ProfileBuilderPage,SessionsPage,SkillsPage,WebhooksPage,uiKit}.tsx`（共 28 个文件） |
 
 ### plugins-page-ui 效果
 
@@ -40,14 +40,16 @@ UI 库（`@nous-research/ui`）的 Card / Button / Input / Dialog / Switch 等�
 
 另外：DS 的 `globals.css` 会给**所有** `code` 元素加"选区高亮"底色（`*::selection, code { background: var(--selection-bg, …) }`，无层级，utility 类盖不住）。MCP 页卡片的端点 URL、OAuth 提供商卡片的登录命令（cli_command）因此带底色，已分别用 `[data-mcp-page] code` 和 `[data-oauth-card] code` 作用域到两个页面/卡片根节点（`data-mcp-page`、`data-oauth-card` 属性）覆盖为透明底；其余页面保留 chip 观感，要全站去掉就改成全局 `code` 规则。
 
-### 系统区移到顶部 banner 右侧
+### 系统区 + 主题/语言切换 + 用户信息 移到顶部 banner 右侧
 
-原来左侧导航栏下半部有一整块系统区（「系统」标题、网关状态 + 活跃会话数、重启网关 / 更新 Hermes 按钮、折叠态的网关小圆点）。现在整块移到了**每个页面顶部 banner 的最右侧**（`GatewayBannerActions`，挂在 `PageHeaderProvider` 新增的 `actions` prop 上，全路由通用）：
+原来左侧导航栏下半部有一整块系统区（「系统」标题、网关状态 + 活跃会话数、重启网关 / 更新 Hermes 按钮、折叠态的网关小圆点），底部还有语言切换和登录用户信息。现在全部移到了**每个页面顶部 banner 的最右侧**（`GatewayBannerActions`，挂在 `PageHeaderProvider` 新增的 `actions` prop 上，全路由通用），顺序：状态胶囊 → 重启网关 → 更新 Hermes → 主题切换 → 语言切换 → 用户胶囊：
 
 - 状态胶囊：网关状态圆点（绿/黄/红）+「系统 运行中 · 活跃会话：N」，点击跳 /sessions；窄屏只留圆点
 - 重启网关 / 更新 Hermes 图标按钮（更新项仍只在 `can_update_hermes` 时出现），运行中显示转圈，确认弹窗逻辑与原侧边栏完全一致
-- 主题切换按钮原样搬入（显示当前主题名，下拉向下展开）
-- 侧边栏相应删掉了该区块和主题切换（语言切换、版本页脚保留在左侧）
+- 主题切换 / 语言切换：新增 `dropDown` prop（`ThemeSwitcher.tsx` / `LanguageSwitcher.tsx`），下拉 `createPortal` 到 `document.body` + `fixed z-[100]`，按按钮 `getBoundingClientRect()` 定位向下展开。原因：banner 在 header 内（`sm:overflow-hidden`），原来的 `absolute` 下拉会被 main 内容遮挡；侧边栏/移动端原有 `dropUp`/sheet 行为不变
+- 用户胶囊：`AuthWidget` 新增 `variant="banner"`（单行紧凑胶囊，`UserRound` + 用户名 + 登出图标）；默认 `sidebar` 行为不变。loopback 模式 / 401 时仍隐藏
+- 侧边栏相应删掉了系统区、主题切换、语言切换、用户信息；`header-right` 插件槽行改为 `SidebarHeaderRightRow`（`App.tsx`）——仅当有插件实际注册内容时才渲染，插件为空时不再留一条空白行
+- ⚠️ `PageHeaderProvider` 的 actions 容器**不能用 `w-full`**：header 行内标题组是 `flex-1`，`w-full` 会把整行占满、标题与 `end` 区被挤成 0 宽（banner 左侧排版混乱的根因，已修）
 - 上游若新增/改名 banner（`role="banner"`）结构，需重新核对 `PageHeaderProvider` 的 `actions` 插槽位置
 
 ## 环境前提
