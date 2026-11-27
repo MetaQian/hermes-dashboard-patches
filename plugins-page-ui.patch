@@ -1,3 +1,534 @@
+diff --git a/plugins/kanban/dashboard/dist/index.js b/plugins/kanban/dashboard/dist/index.js
+index 658ae11c5b9..e1613659c28 100644
+--- a/plugins/kanban/dashboard/dist/index.js
++++ b/plugins/kanban/dashboard/dist/index.js
+@@ -20,6 +20,7 @@
+   const {
+     Card, CardContent,
+     Badge, Button, Input, Label, Select, SelectOption,
++    Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+   } = SDK.components;
+   const { useState, useEffect, useCallback, useMemo, useRef } = SDK.hooks;
+   const { cn, timeAgo } = SDK.utils;
+@@ -648,6 +649,19 @@
+     const [includeArchived, setIncludeArchived] = useState(false);
+     const [search, setSearch] = useState("");
+     const [laneByProfile, setLaneByProfile] = useState(true);
++    // Board view (drag-and-drop columns) vs. profile card view (one card
++    // per Hermes profile, running tasks inline, other statuses in popups).
++    // Profile cards are the default; choice persists in localStorage.
++    const [viewMode, setViewMode] = useState(function () {
++      try {
++        return window.localStorage.getItem("hermes-kanban-view") === "board"
++          ? "board" : "profiles";
++      } catch (e) { return "profiles"; }
++    });
++    const changeViewMode = useCallback(function (mode) {
++      setViewMode(mode);
++      try { window.localStorage.setItem("hermes-kanban-view", mode); } catch (e) { /* private mode */ }
++    }, []);
+     const [configApplied, setConfigApplied] = useState(false);
+ 
+     const [selectedTaskId, setSelectedTaskId] = useState(null);
+@@ -1313,6 +1327,8 @@
+         }),
+         h(BoardToolbar, {
+           board: boardData,
++          viewMode,
++          onViewModeChange: changeViewMode,
+           tenantFilter, setTenantFilter,
+           assigneeFilter, setAssigneeFilter,
+           includeArchived, setIncludeArchived,
+@@ -1338,26 +1354,37 @@
+           dialogProps: kanbanDialogs.dialogProps,
+           dialogState: kanbanDialogs.dialogState,
+         }),
+-        h(BoardColumns, {
+-          board: filteredBoard,
+-          boardMeta: boardList.find(function (item) { return item.slug === board; }) || null,
+-          laneByProfile,
+-          selectedIds,
+-          failedIds,
+-          draggingTaskId,
+-          onDragStart: handleDragStart,
+-          onDragEnd: handleDragEnd,
+-          toggleSelected,
+-          toggleRange,
+-          selectAllInColumn,
+-          onMove: moveTask,
+-          onMoveSelected: moveSelected,
+-          onDelete: deleteTask,
+-          onDeleteSelected: deleteSelected,
+-          onOpen: setSelectedTaskId,
+-          onCreate: createTask,
+-          allTasks: boardData.columns.reduce(function (acc, c) { return acc.concat(c.tasks); }, []),
+-        }),
++        viewMode === "profiles"
++          ? h(ProfileBoard, {
++              board: filteredBoard,
++              profiles: (boardData && boardData.assignees) || [],
++              showEmptyProfiles: !search && !tenantFilter && !assigneeFilter,
++              selectedIds,
++              failedIds,
++              toggleSelected,
++              toggleRange,
++              onOpen: setSelectedTaskId,
++            })
++          : h(BoardColumns, {
++            board: filteredBoard,
++            boardMeta: boardList.find(function (item) { return item.slug === board; }) || null,
++            laneByProfile,
++            selectedIds,
++            failedIds,
++            draggingTaskId,
++            onDragStart: handleDragStart,
++            onDragEnd: handleDragEnd,
++            toggleSelected,
++            toggleRange,
++            selectAllInColumn,
++            onMove: moveTask,
++            onMoveSelected: moveSelected,
++            onDelete: deleteTask,
++            onDeleteSelected: deleteSelected,
++            onOpen: setSelectedTaskId,
++            onCreate: createTask,
++            allTasks: boardData.columns.reduce(function (acc, c) { return acc.concat(c.tasks); }, []),
++          }),
+         selectedTaskId ? h(TaskDrawer, {
+           taskId: selectedTaskId,
+           boardSlug: board,
+@@ -2545,6 +2572,28 @@
+     const tenants = (props.board && props.board.tenants) || [];
+     const assignees = (props.board && props.board.assignees) || [];
+     return h("div", { className: "flex flex-wrap items-end gap-3" },
++      h("div", {
++        className: "flex flex-col gap-1",
++        title: "Switch between the column board (drag and drop) and profile cards.",
++      },
++        h("span", { className: "text-xs text-muted-foreground" }, tx(t, "view", "View")),
++        h("div", { className: "hermes-kanban-view-toggle", role: "tablist" },
++          h("button", {
++            type: "button",
++            role: "tab",
++            "aria-selected": props.viewMode === "board",
++            className: props.viewMode === "board" ? "is-active" : "",
++            onClick: function () { props.onViewModeChange("board"); },
++          }, tx(t, "viewBoard", "Board")),
++          h("button", {
++            type: "button",
++            role: "tab",
++            "aria-selected": props.viewMode === "profiles",
++            className: props.viewMode === "profiles" ? "is-active" : "",
++            onClick: function () { props.onViewModeChange("profiles"); },
++          }, tx(t, "viewProfiles", "Profile cards")),
++        ),
++      ),
+       h("div", { className: "flex flex-col gap-1",
+                  title: "Fuzzy-match tasks by id, title, or description. Matches across all columns." },
+         h(Label, { className: "text-xs text-muted-foreground" }, tx(t, "search", "Search")),
+@@ -3278,6 +3327,201 @@
+     );
+   }
+ 
++  // -------------------------------------------------------------------------
++  // Profile card view — one card per Hermes profile. Tasks in the Running
++  // status are shown inline under the card header with an "In progress"
++  // label; every other status is a clickable chip that opens a dialog
++  // listing that profile's tasks in that status. Clicking a card opens the
++  // shared task drawer. Non-running statuses that have no tasks are hidden.
++  // -------------------------------------------------------------------------
++
++  const PROFILE_STATUS_ORDER = ["triage", "todo", "ready", "blocked", "review", "done"];
++
++  function ProfileBoard(props) {
++    const { t } = useI18n();
++    const columns = (props.board && props.board.columns) || [];
++    const allTasks = columns.reduce(function (acc, c) {
++      return acc.concat(c.tasks || []);
++    }, []);
++
++    // profile name ("" = unassigned) -> { running: [], others: {status: []}, total }
++    const groups = useMemo(function () {
++      const m = new Map();
++      const ensure = function (name) {
++        if (!m.has(name)) m.set(name, { running: [], others: {}, total: 0 });
++        return m.get(name);
++      };
++      const known = props.profiles || [];
++      for (let i = 0; i < known.length; i++) ensure(known[i]);
++      for (let i = 0; i < allTasks.length; i++) {
++        const tk = allTasks[i];
++        const g = ensure(tk.assignee || "");
++        g.total += 1;
++        if (tk.status === "running") {
++          g.running.push(tk);
++        } else {
++          if (!g.others[tk.status]) g.others[tk.status] = [];
++          g.others[tk.status].push(tk);
++        }
++      }
++      const list = [];
++      m.forEach(function (g, name) { list.push({ name: name, running: g.running, others: g.others, total: g.total }); });
++      // Busy profiles first (running desc, then total desc, then name).
++      list.sort(function (a, b) {
++        if (b.running.length !== a.running.length) return b.running.length - a.running.length;
++        if (b.total !== a.total) return b.total - a.total;
++        return a.name.localeCompare(b.name);
++      });
++      return list;
++    }, [columns, props.profiles]);
++
++    const visible = groups.filter(function (g) {
++      return g.total > 0 || props.showEmptyProfiles;
++    });
++
++    if (visible.length === 0) {
++      return h("div", { className: "p-8 text-sm text-muted-foreground" },
++        tx(t, "noProfiles", "No profiles on this board yet."));
++    }
++
++    return h(ErrorBoundary, null,
++      h("div", { className: "hermes-kanban-profiles" },
++        visible.map(function (g) {
++          return h(ProfileCard, {
++            key: g.name || "(unassigned)",
++            group: g,
++            selectedIds: props.selectedIds,
++            failedIds: props.failedIds,
++            toggleSelected: props.toggleSelected,
++            toggleRange: props.toggleRange,
++            onOpen: props.onOpen,
++          });
++        }),
++      ),
++    );
++  }
++
++  function ProfileCard(props) {
++    const { t } = useI18n();
++    const g = props.group;
++    const [dialogStatus, setDialogStatus] = useState(null);
++    const colLabels = (t.kanban && t.kanban.columnLabels) || {};
++    const labelFor = function (s) {
++      return (typeof colLabels[s] === "string" && colLabels[s]) || s;
++    };
++    const name = g.name;
++    const displayName = name || tx(t, "unassigned", "Unassigned");
++    const initial = displayName.replace(/^@/, "").charAt(0).toUpperCase() || "?";
++
++    const dialogTasks = dialogStatus ? (g.others[dialogStatus] || []) : [];
++
++    return h(React.Fragment, null,
++      h(Card, { className: "hermes-kanban-profile-card" },
++        h("div", { className: "hermes-kanban-profile-head" },
++          h("span", {
++            className: "hermes-kanban-profile-avatar",
++            "aria-hidden": "true",
++          }, initial),
++          h("div", { className: "hermes-kanban-profile-titles" },
++            h("div", { className: "hermes-kanban-profile-name" },
++              h("span", { title: name ? `Hermes profile @${name}` : "Tasks without an assigned profile" },
++                displayName)),
++            h("div", { className: "hermes-kanban-profile-sub" },
++              tx(t, "profileSummary", "{n} tasks · {m} in progress",
++                { n: g.total, m: g.running.length })),
++          ),
++          g.running.length > 0
++            ? h(Badge, {
++                variant: "outline",
++                className: "hermes-kanban-profile-running-badge",
++                title: tx(t, "inProgress", "In progress"),
++              }, g.running.length)
++            : null,
++        ),
++        h(CardContent, { className: "hermes-kanban-profile-body" },
++          h("div", { className: "hermes-kanban-profile-section" },
++            h("div", { className: "hermes-kanban-profile-section-head" },
++              h("span", { className: "hermes-kanban-dot hermes-kanban-dot-running" }),
++              tx(t, "inProgress", "In progress"),
++              g.running.length > 0
++                ? h("span", { className: "hermes-kanban-profile-count" }, g.running.length)
++                : null,
++            ),
++            g.running.length === 0
++              ? h("div", { className: "hermes-kanban-profile-none" },
++                  tx(t, "noRunning", "No in-progress tasks"))
++              : g.running.map(function (tk) {
++                  return h(TaskCard, {
++                    key: tk.id,
++                    task: tk,
++                    selected: props.selectedIds ? props.selectedIds.has(tk.id) : false,
++                    failed: props.failedIds ? props.failedIds.has(tk.id) : false,
++                    toggleSelected: props.toggleSelected,
++                    toggleRange: props.toggleRange,
++                    onOpen: props.onOpen,
++                  });
++                }),
++          ),
++          (function () {
++            const chips = PROFILE_STATUS_ORDER.filter(function (s) {
++              return g.others[s] && g.others[s].length > 0;
++            });
++            if (chips.length === 0) return null;
++            return h("div", { className: "hermes-kanban-profile-chips" },
++              chips.map(function (s) {
++                return h("button", {
++                  type: "button",
++                  key: s,
++                  className: "hermes-kanban-profile-chip",
++                  onClick: function () { setDialogStatus(s); },
++                  title: tx(t, "chipHint", "Show {label} tasks", { label: labelFor(s) }),
++                },
++                  h("span", { className: "hermes-kanban-dot hermes-kanban-dot-" + s }),
++                  h("span", null, labelFor(s)),
++                  h("span", { className: "hermes-kanban-profile-count" }, g.others[s].length),
++                );
++              }),
++            );
++          })(),
++        ),
++      ),
++      dialogStatus
++        ? h(Dialog, {
++            open: true,
++            onOpenChange: function (open) { if (!open) setDialogStatus(null); },
++          },
++            h(DialogContent, { className: "hermes-kanban-profile-dialog max-w-2xl" },
++              h(DialogHeader, null,
++                h(DialogTitle, null,
++                  displayName + " · " + labelFor(dialogStatus)),
++                h(DialogDescription, null,
++                  tx(t, "dialogDesc", "Click a card to open the task.")),
++              ),
++              h("div", { className: "hermes-kanban-profile-dialog-body" },
++                dialogTasks.length === 0
++                  ? h("div", { className: "p-4 text-sm text-muted-foreground" },
++                      tx(t, "noTasks", "— no tasks —"))
++                  : dialogTasks.map(function (tk) {
++                      return h(TaskCard, {
++                        key: tk.id,
++                        task: tk,
++                        selected: props.selectedIds ? props.selectedIds.has(tk.id) : false,
++                        failed: props.failedIds ? props.failedIds.has(tk.id) : false,
++                        toggleSelected: props.toggleSelected,
++                        toggleRange: props.toggleRange,
++                        onOpen: function (id) {
++                          setDialogStatus(null);
++                          props.onOpen(id);
++                        },
++                      });
++                    }),
++              ),
++            ),
++          )
++        : null,
++    );
++  }
++
+   // -------------------------------------------------------------------------
+   // Create-task dialog (modal, with parent selector)
+   //
+diff --git a/plugins/kanban/dashboard/dist/style.css b/plugins/kanban/dashboard/dist/style.css
+index 6c182c5169b..1d620db2c16 100644
+--- a/plugins/kanban/dashboard/dist/style.css
++++ b/plugins/kanban/dashboard/dist/style.css
+@@ -1609,3 +1609,196 @@
+ .hermes-kanban-trash-label {
+   font-weight: 500;
+ }
++
++/* ==========================================================================
++   Profile card view
++   One card per Hermes profile. Running tasks inline; other statuses are
++   clickable chips that open a dialog.
++   ========================================================================== */
++
++/* View toggle (Board / Profile cards) in the toolbar */
++.hermes-kanban-view-toggle {
++  display: inline-flex;
++  align-items: stretch;
++  gap: 2px;
++  padding: 2px;
++  border: 1px solid var(--color-border);
++  border-radius: 8px;
++  background: var(--color-muted);
++  height: 26px;
++}
++.hermes-kanban-view-toggle button {
++  appearance: none;
++  border: none;
++  background: transparent;
++  color: var(--color-muted-foreground);
++  font-size: 12px;
++  line-height: 1;
++  padding: 0 10px;
++  border-radius: 6px;
++  cursor: pointer;
++  white-space: nowrap;
++}
++.hermes-kanban-view-toggle button.is-active {
++  background: var(--color-background);
++  color: var(--color-foreground);
++  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
++}
++.hermes-kanban-view-toggle button:hover:not(.is-active) {
++  color: var(--color-foreground);
++}
++
++/* Responsive grid of profile cards */
++.hermes-kanban-profiles {
++  display: grid;
++  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
++  gap: 14px;
++  align-items: start;
++}
++@media (max-width: 720px) {
++  .hermes-kanban-profiles {
++    grid-template-columns: 1fr;
++  }
++}
++
++/* Card */
++.hermes-kanban-profile-card {
++  display: flex;
++  flex-direction: column;
++  overflow: hidden;
++}
++
++/* Card header: avatar + name + running badge */
++.hermes-kanban-profile-head {
++  display: flex;
++  align-items: center;
++  gap: 10px;
++  padding: 12px 14px;
++  border-bottom: 1px solid var(--color-border);
++}
++.hermes-kanban-profile-avatar {
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  width: 34px;
++  height: 34px;
++  flex: none;
++  border-radius: 50%;
++  background: var(--color-primary);
++  color: var(--color-primary-foreground);
++  font-weight: 600;
++  font-size: 15px;
++  user-select: none;
++}
++.hermes-kanban-profile-titles {
++  flex: 1;
++  min-width: 0;
++}
++.hermes-kanban-profile-name {
++  font-weight: 600;
++  font-size: 14px;
++  line-height: 1.2;
++  white-space: nowrap;
++  overflow: hidden;
++  text-overflow: ellipsis;
++}
++.hermes-kanban-profile-sub {
++  font-size: 12px;
++  color: var(--color-muted-foreground);
++  margin-top: 2px;
++  white-space: nowrap;
++  overflow: hidden;
++  text-overflow: ellipsis;
++}
++.hermes-kanban-profile-running-badge {
++  flex: none;
++  color: var(--color-primary);
++  border-color: color-mix(in srgb, var(--color-primary) 40%, transparent);
++}
++
++/* Card body */
++.hermes-kanban-profile-body {
++  padding: 12px;
++  display: flex;
++  flex-direction: column;
++  gap: 12px;
++}
++
++/* "In progress" section */
++.hermes-kanban-profile-section {
++  display: flex;
++  flex-direction: column;
++  gap: 8px;
++}
++.hermes-kanban-profile-section-head {
++  display: flex;
++  align-items: center;
++  gap: 6px;
++  font-size: 12px;
++  font-weight: 600;
++  color: var(--color-muted-foreground);
++  text-transform: uppercase;
++  letter-spacing: 0.03em;
++}
++.hermes-kanban-profile-none {
++  font-size: 12px;
++  color: var(--color-muted-foreground);
++  padding: 8px 10px;
++  border: 1px dashed var(--color-border);
++  border-radius: 8px;
++  text-align: center;
++}
++
++/* Status chips */
++.hermes-kanban-profile-chips {
++  display: flex;
++  flex-wrap: wrap;
++  gap: 6px;
++}
++.hermes-kanban-profile-chip {
++  display: inline-flex;
++  align-items: center;
++  gap: 6px;
++  padding: 4px 8px;
++  font-size: 12px;
++  line-height: 1;
++  color: var(--color-foreground);
++  background: transparent;
++  border: 1px solid var(--color-border);
++  border-radius: 999px;
++  cursor: pointer;
++}
++.hermes-kanban-profile-chip:hover {
++  background: var(--color-muted);
++  border-color: color-mix(in srgb, var(--color-foreground) 25%, transparent);
++}
++.hermes-kanban-profile-chip:focus-visible {
++  outline: 2px solid var(--color-ring, var(--color-primary));
++  outline-offset: 1px;
++}
++.hermes-kanban-profile-count {
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  min-width: 18px;
++  height: 18px;
++  padding: 0 5px;
++  border-radius: 999px;
++  background: var(--color-muted);
++  color: var(--color-muted-foreground);
++  font-size: 11px;
++  font-weight: 600;
++}
++
++/* Dialog body — task cards stacked */
++.hermes-kanban-profile-dialog .hermes-kanban-profile-dialog-body {
++  display: flex;
++  flex-direction: column;
++  gap: 8px;
++  max-height: 60vh;
++  overflow-y: auto;
++  padding: 4px 2px;
++}
++.hermes-kanban-profile-dialog .hermes-kanban-card-check-wrap {
++  display: none; /* no bulk selection inside the popup */
++}
 diff --git a/web/src/App.tsx b/web/src/App.tsx
 index 0553271d4c7..1e953e32fe6 100644
 --- a/web/src/App.tsx
@@ -825,7 +1356,7 @@ index 3cb6ffebfc7..8d9b95d8b9c 100644
          </header>
  
 diff --git a/web/src/i18n/en.ts b/web/src/i18n/en.ts
-index f6f04b06fd2..4c7355f1190 100644
+index f6f04b06fd2..d46ab13f884 100644
 --- a/web/src/i18n/en.ts
 +++ b/web/src/i18n/en.ts
 @@ -75,17 +75,22 @@ export const en: Translations = {
@@ -954,8 +1485,32 @@ index f6f04b06fd2..4c7355f1190 100644
    },
  
    skills: {
+@@ -799,6 +893,15 @@ export const en: Translations = {
+     allProfiles: "All profiles",
+     showArchived: "Show archived",
+     lanesByProfile: "Lanes by profile",
++    view: "View",
++    viewBoard: "Board",
++    viewProfiles: "Profile cards",
++    inProgress: "In progress",
++    noRunning: "No in-progress tasks",
++    profileSummary: "{n} tasks · {m} in progress",
++    noProfiles: "No profiles on this board yet.",
++    chipHint: "Show {label} tasks",
++    dialogDesc: "Click a card to open the task.",
+     nudgeDispatcher: "Nudge dispatcher",
+     refresh: "Refresh",
+     selected: "selected",
+@@ -897,6 +1000,7 @@ export const en: Translations = {
+       ready: "Ready",
+       running: "In Progress",
+       blocked: "Blocked",
++      review: "Review",
+       done: "Done",
+       archived: "Archived",
+     },
 diff --git a/web/src/i18n/types.ts b/web/src/i18n/types.ts
-index bdf16c89805..10db8063b82 100644
+index bdf16c89805..dd34ad68dfe 100644
 --- a/web/src/i18n/types.ts
 +++ b/web/src/i18n/types.ts
 @@ -94,17 +94,22 @@ export interface Translations {
@@ -1173,7 +1728,34 @@ index bdf16c89805..10db8063b82 100644
    };
  
    // ── Config page ──
-@@ -952,4 +1114,264 @@ export interface Translations {
+@@ -798,6 +960,18 @@ export interface Translations {
+     allProfiles: string;
+     showArchived: string;
+     lanesByProfile: string;
++    // Profile card view (kanban dashboard customization) — optional so
++    // upstream locale files compile without these keys; the plugin falls
++    // back to the English strings in its bundle.
++    view?: string;
++    viewBoard?: string;
++    viewProfiles?: string;
++    inProgress?: string;
++    noRunning?: string;
++    profileSummary?: string;
++    noProfiles?: string;
++    chipHint?: string;
++    dialogDesc?: string;
+     nudgeDispatcher: string;
+     refresh: string;
+     selected: string;
+@@ -892,6 +1066,7 @@ export interface Translations {
+       ready: string;
+       running: string;
+       blocked: string;
++      review?: string;
+       done: string;
+       archived: string;
+     };
+@@ -952,4 +1127,264 @@ export interface Translations {
        confirmManyTitle?: string;
      };
    };
@@ -1439,7 +2021,7 @@ index bdf16c89805..10db8063b82 100644
 +  };
  }
 diff --git a/web/src/i18n/zh.ts b/web/src/i18n/zh.ts
-index 104612bcaf5..0221f00ad12 100644
+index 104612bcaf5..00618b7e235 100644
 --- a/web/src/i18n/zh.ts
 +++ b/web/src/i18n/zh.ts
 @@ -10,6 +10,7 @@ export const zh: Translations = {
@@ -1672,7 +2254,31 @@ index 104612bcaf5..0221f00ad12 100644
      skillCount: "{count} 个技能",
      resultCount: "{count} 个结果",
      noDescription: "暂无描述。",
-@@ -794,4 +971,283 @@ export const zh: Translations = {
+@@ -662,6 +839,15 @@ export const zh: Translations = {
+     allProfiles: "全部配置",
+     showArchived: "显示已归档",
+     lanesByProfile: "按配置分组",
++    view: "视图",
++    viewBoard: "看板",
++    viewProfiles: "配置卡片",
++    inProgress: "进行中",
++    noRunning: "暂无进行中的任务",
++    profileSummary: "{n} 个任务 · {m} 进行中",
++    noProfiles: "此看板还没有配置卡片。",
++    chipHint: "点击查看{label}任务",
++    dialogDesc: "点击卡片打开任务详情。",
+     nudgeDispatcher: "触发调度器",
+     refresh: "刷新",
+     selected: "已选中",
+@@ -757,6 +943,7 @@ export const zh: Translations = {
+       ready: "就绪",
+       running: "进行中",
+       blocked: "阻塞",
++      review: "评审",
+       done: "已完成",
+       archived: "已归档",
+     },
+@@ -794,4 +981,283 @@ export const zh: Translations = {
      logTruncated: "（显示最后 100 KB — 完整日志位于 ",
      logAt: "）",
    },

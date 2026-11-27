@@ -7,7 +7,17 @@
 
 | 补丁文件 | 说明 | 基础版本 | 涉及文件 |
 | --- | --- | --- | --- |
-| `patches/plugins-page-ui.patch` | dashboard 前端累计定制补丁（每次改动整体重新导出，`git apply --check -R` 校验过），当前含九块：①插件管理页 UI 改造（Tab 化 + 卡片网格 +「固定提交」钉版 + 详情弹窗）；②多页面中文化（定时任务 / MCP / Webhooks / 频道 / 技能 / 会话页，可选 i18n key + `?? "英文fallback"`，共享 `uiKit.ts` 的 `BADGE_CN` 徽标样式）；③会话列表修剪（`session-prune.ts`）；④**全站圆角**（见下节）；⑤导航栏汉化（文件 / 频道 / Webhooks / 配对 / 系统 5 项 + 页面标题同步）；⑥**顶部 banner 控制区**：系统区 + 主题 / 语言切换 + 登录用户信息全部移到页面 banner 右侧（见下节）；⑦代码 chip 去底色（MCP 页 + OAuth 提供商卡片）；⑧主题 / 语言下拉 **portal 到 body**（`fixed z-[100]`），修复下拉被 main 内容遮挡；⑨`AuthWidget` 新增 `variant="banner"` 紧凑单行用户胶囊 | `b579fe6a938`（v0.23.4+585） | `web/src/App.tsx`、`web/src/index.css`、`web/src/components/{AuthWidget,LanguageSwitcher,OAuthProvidersCard,ThemeSwitcher}.tsx`、`web/src/contexts/PageHeaderProvider.tsx`、`web/src/i18n/{types,en,zh}.ts`、`web/src/lib/{api,session-prune,resolve-page-title}.ts`、`web/src/pages/{PluginsPage,PluginsPage_updateAll,AnalyticsPage,ChannelsPage,ChatPage,ConfigPage,CronPage,EnvPage,McpPage,ModelsPage,ProfileBuilderPage,SessionsPage,SkillsPage,WebhooksPage,uiKit}.tsx`（共 28 个文件） |
+| `patches/plugins-page-ui.patch` | dashboard 前端累计定制补丁（每次改动整体重新导出，`git apply --check -R` 校验过），当前含十块：①插件管理页 UI 改造（Tab 化 + 卡片网格 +「固定提交」钉版 + 详情弹窗）；②多页面中文化（定时任务 / MCP / Webhooks / 频道 / 技能 / 会话页，可选 i18n key + `?? "英文fallback"`，共享 `uiKit.ts` 的 `BADGE_CN` 徽标样式）；③会话列表修剪（`session-prune.ts`）；④**全站圆角**（见下节）；⑤导航栏汉化（文件 / 频道 / Webhooks / 配对 / 系统 5 项 + 页面标题同步）；⑥**顶部 banner 控制区**：系统区 + 主题 / 语言切换 + 登录用户信息全部移到页面 banner 右侧（见下节）；⑦代码 chip 去底色（MCP 页 + OAuth 提供商卡片）；⑧主题 / 语言下拉 **portal 到 body**（`fixed z-[100]`），修复下拉被 main 内容遮挡；⑨`AuthWidget` 新增 `variant="banner"` 紧凑单行用户胶囊；⑩**Kanban 配置卡片视图**：kanban 页默认按 profile 卡片展示（工具栏「看板 / 配置卡片」切换，默认卡片视图），进行中任务直接挂在卡片内，其他状态各一个可点击胶囊、点击弹窗展示（见下节） | `b579fe6a938`（v0.23.4+585） | `web/src/App.tsx`、`web/src/index.css`、`web/src/components/{AuthWidget,LanguageSwitcher,OAuthProvidersCard,ThemeSwitcher}.tsx`、`web/src/contexts/PageHeaderProvider.tsx`、`web/src/i18n/{types,en,zh}.ts`、`web/src/lib/{api,session-prune,resolve-page-title}.ts`、`web/src/pages/{PluginsPage,PluginsPage_updateAll,AnalyticsPage,ChannelsPage,ChatPage,ConfigPage,CronPage,EnvPage,McpPage,ModelsPage,ProfileBuilderPage,SessionsPage,SkillsPage,WebhooksPage,uiKit}.tsx`、`plugins/kanban/dashboard/dist/{index.js,style.css}`（共 30 个文件） |
+
+### ⑩ Kanban 配置卡片视图（2026-11-27）
+
+- 文件：`plugins/kanban/dashboard/dist/index.js`、`plugins/kanban/dashboard/dist/style.css`
+- kanban 页新增**视图切换**（工具栏最左侧「看板 / 配置卡片」分段按钮，localStorage 持久化），**默认「配置卡片」视图**：
+  - 按 Hermes profile 一张卡片（头像首字母 + 名称 + 「N 个任务 · M 进行中」统计），有进行中任务的 profile 排前；无任务的 profile 卡片仅在没有筛选条件时显示；未分配任务的归入「未分配」卡片。
+  - **进行中**任务直接挂在卡片内「进行中」区块下（复用 TaskCard，点击开任务抽屉）。
+  - 其他状态（待分类/待办/就绪/阻塞/评审/已完成）各自一个**可点击状态胶囊**（状态点 + 标签 + 计数），点击弹出 Dialog 列出该 profile 该状态下的任务；弹窗内点任务卡 → 关弹窗开任务抽屉；弹窗内隐藏多选框。
+- i18n：kanban 命名空间新增 9 个**可选** key（view/viewBoard/viewProfiles/inProgress/noRunning/profileSummary/noProfiles/chipHint/dialogDesc，types.ts 标 `?`，插件内英文兜底）；zh/en 词条已加；顺带补齐 `columnLabels.review`（en "Review" / zh "评审"，此前 review 列无中文）。
+- 注意：`dist/index.js` 是纯 IIFE 无构建步骤，直接改文件即生效（需重建 web 资产 + 重启 hermes-dashboard）。
 
 ### plugins-page-ui 效果
 
