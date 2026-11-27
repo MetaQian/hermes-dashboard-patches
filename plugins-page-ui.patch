@@ -530,7 +530,7 @@ index 6c182c5169b..1d620db2c16 100644
 +  display: none; /* no bulk selection inside the popup */
 +}
 diff --git a/web/src/App.tsx b/web/src/App.tsx
-index 0553271d4c7..1e953e32fe6 100644
+index 0553271d4c7..c90476fa852 100644
 --- a/web/src/App.tsx
 +++ b/web/src/App.tsx
 @@ -17,6 +17,7 @@ import {
@@ -586,7 +586,55 @@ index 0553271d4c7..1e953e32fe6 100644
    {
      path: "/docs",
      labelKey: "documentation",
-@@ -676,48 +677,7 @@ export default function App() {
+@@ -649,21 +650,34 @@ export default function App() {
+             <ProfileSwitcher collapsed={isDesktopCollapsed} />
+ 
+             <nav
+-              className="min-h-0 w-full flex-1 overflow-y-auto overflow-x-hidden border-t border-current/10 py-2"
++              className="flex min-h-0 w-full flex-1 flex-col"
+               aria-label={t.app.navigation}
+             >
+-              <ul className="flex flex-col">
+-                {sidebarNav.coreItems.map((item) => (
+-                  <SidebarNavLink
+-                    closeMobile={closeMobile}
+-                    collapsed={isDesktopCollapsed}
+-                    item={item}
+-                    key={item.path}
+-                    t={t}
+-                    tooltipWarmRef={tooltipWarmRef}
+-                  />
+-                ))}
+-              </ul>
++              {/* Core nav — its own scroll region so wheeling here never
++                  scrolls the plugin section below (and vice versa). */}
++              <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden border-t border-current/10 py-2">
++                <span
++                  className={cn(
++                    "px-5 pt-0.5 pb-1",
++                    "font-sans text-display text-xs tracking-[0.12em] text-text-tertiary",
++                    isDesktopCollapsed && "lg:hidden",
++                  )}
++                >
++                  {t.app.coreNavSection ?? "General"}
++                </span>
++                <ul className="flex flex-col">
++                  {sidebarNav.coreItems.map((item) => (
++                    <SidebarNavLink
++                      closeMobile={closeMobile}
++                      collapsed={isDesktopCollapsed}
++                      item={item}
++                      key={item.path}
++                      t={t}
++                      tooltipWarmRef={tooltipWarmRef}
++                    />
++                  ))}
++                </ul>
++              </div>
+ 
+               <SidebarPluginNav
+                 closeMobile={closeMobile}
+@@ -676,48 +690,7 @@ export default function App() {
  
              <CockpitSidebarSlot layoutVariant={layoutVariant} />
  
@@ -636,7 +684,7 @@ index 0553271d4c7..1e953e32fe6 100644
  
              <div
                className={cn(
-@@ -725,12 +685,14 @@ export default function App() {
+@@ -725,12 +698,14 @@ export default function App() {
                  isDesktopCollapsed && "lg:hidden",
                )}
              >
@@ -653,7 +701,16 @@ index 0553271d4c7..1e953e32fe6 100644
              <div
                className={cn(
                  "relative z-2 flex min-w-0 min-h-0 flex-1 flex-col",
-@@ -940,12 +902,47 @@ function SidebarPluginNav({
+@@ -917,7 +892,7 @@ function SidebarPluginNav({
+   return (
+     <div
+       aria-labelledby="hermes-sidebar-plugin-nav-heading"
+-      className="flex flex-col border-t border-current/10 pb-2"
++      className="flex min-h-0 max-h-2/5 flex-col overflow-y-auto overflow-x-hidden border-t border-current/10 pb-2"
+       role="group"
+     >
+       <span
+@@ -940,12 +915,47 @@ function SidebarPluginNav({
    );
  }
  
@@ -707,7 +764,7 @@ index 0553271d4c7..1e953e32fe6 100644
    const { t } = useI18n();
    const navigate = useNavigate();
    const { activeAction, isBusy, isRunning, pendingAction, runAction } =
-@@ -1026,63 +1023,96 @@ function SidebarSystemActions({
+@@ -1026,63 +1036,96 @@ function SidebarSystemActions({
      }
      void runAction(action);
      navigate("/sessions");
@@ -844,7 +901,7 @@ index 0553271d4c7..1e953e32fe6 100644
  
      <ConfirmDialog
        cancelLabel={t.common.cancel}
-@@ -1120,193 +1150,6 @@ function SidebarSystemActions({
+@@ -1120,193 +1163,6 @@ function SidebarSystemActions({
    );
  }
  
@@ -1038,7 +1095,7 @@ index 0553271d4c7..1e953e32fe6 100644
  
  function SidebarTooltip({ anchor, label, warmRef }: SidebarTooltipProps) {
    const rect = anchor.getBoundingClientRect();
-@@ -1351,12 +1194,6 @@ function SidebarTooltip({ anchor, label, warmRef }: SidebarTooltipProps) {
+@@ -1351,12 +1207,6 @@ function SidebarTooltip({ anchor, label, warmRef }: SidebarTooltipProps) {
  
  type TooltipWarmRef = React.RefObject<number>;
  
@@ -1051,7 +1108,7 @@ index 0553271d4c7..1e953e32fe6 100644
  interface NavItem {
    icon: ComponentType<{ className?: string }>;
    label: string;
-@@ -1364,13 +1201,6 @@ interface NavItem {
+@@ -1364,13 +1214,6 @@ interface NavItem {
    path: string;
  }
  
@@ -1065,7 +1122,7 @@ index 0553271d4c7..1e953e32fe6 100644
  interface SidebarNavLinkProps {
    closeMobile: () => void;
    collapsed: boolean;
-@@ -1379,29 +1209,12 @@ interface SidebarNavLinkProps {
+@@ -1379,29 +1222,12 @@ interface SidebarNavLinkProps {
    tooltipWarmRef: TooltipWarmRef;
  }
  
@@ -1356,7 +1413,7 @@ index 3cb6ffebfc7..8d9b95d8b9c 100644
          </header>
  
 diff --git a/web/src/i18n/en.ts b/web/src/i18n/en.ts
-index f6f04b06fd2..d46ab13f884 100644
+index f6f04b06fd2..560061e4b07 100644
 --- a/web/src/i18n/en.ts
 +++ b/web/src/i18n/en.ts
 @@ -75,17 +75,22 @@ export const en: Translations = {
@@ -1382,7 +1439,15 @@ index f6f04b06fd2..d46ab13f884 100644
      },
      modelToolsSheetSubtitle: "& tools",
      modelToolsSheetTitle: "Model",
-@@ -494,6 +499,7 @@ export const en: Translations = {
+@@ -93,6 +98,7 @@ export const en: Translations = {
+     openDocumentation: "Open documentation in a new tab",
+     openNavigation: "Open navigation",
+     pluginNavSection: "Plugins",
++    coreNavSection: "General",
+     sessionsActiveCount: "{count} active",
+     statusOverview: "Status overview",
+     system: "System",
+@@ -494,6 +500,7 @@ export const en: Translations = {
        "Curated, Nous-reviewed plugins pinned to exact commits. Install from here for supply-chain-safe versions.",
      catalogSearchPlaceholder: "Search catalog...",
      catalogEmpty: "No catalog entries match.",
@@ -1390,7 +1455,7 @@ index f6f04b06fd2..d46ab13f884 100644
      catalogEmptyDocsLink: "Learn about Hermes plugins",
      catalogInstallBtn: "Install",
      catalogInstalledBadge: "Installed ✓",
-@@ -504,6 +510,94 @@ export const en: Translations = {
+@@ -504,6 +511,94 @@ export const en: Translations = {
        "Plugins install disabled; enable it after install to activate.",
      catalogRequiresEnv: "Requires env",
      removedFromCatalog: "Removed from catalog",
@@ -1485,7 +1550,7 @@ index f6f04b06fd2..d46ab13f884 100644
    },
  
    skills: {
-@@ -799,6 +893,15 @@ export const en: Translations = {
+@@ -799,6 +894,15 @@ export const en: Translations = {
      allProfiles: "All profiles",
      showArchived: "Show archived",
      lanesByProfile: "Lanes by profile",
@@ -1501,7 +1566,7 @@ index f6f04b06fd2..d46ab13f884 100644
      nudgeDispatcher: "Nudge dispatcher",
      refresh: "Refresh",
      selected: "selected",
-@@ -897,6 +1000,7 @@ export const en: Translations = {
+@@ -897,6 +1001,7 @@ export const en: Translations = {
        ready: "Ready",
        running: "In Progress",
        blocked: "Blocked",
@@ -1510,7 +1575,7 @@ index f6f04b06fd2..d46ab13f884 100644
        archived: "Archived",
      },
 diff --git a/web/src/i18n/types.ts b/web/src/i18n/types.ts
-index bdf16c89805..dd34ad68dfe 100644
+index bdf16c89805..0f498c2fdcd 100644
 --- a/web/src/i18n/types.ts
 +++ b/web/src/i18n/types.ts
 @@ -94,17 +94,22 @@ export interface Translations {
@@ -1536,7 +1601,16 @@ index bdf16c89805..dd34ad68dfe 100644
      };
      modelToolsSheetSubtitle: string;
      modelToolsSheetTitle: string;
-@@ -250,6 +255,27 @@ export interface Translations {
+@@ -112,6 +117,8 @@ export interface Translations {
+     openDocumentation: string;
+     openNavigation: string;
+     pluginNavSection: string;
++    /** Optional — label for the built-in (non-plugin) sidebar section. */
++    coreNavSection?: string;
+     sessionsActiveCount: string;
+     statusOverview: string;
+     system: string;
+@@ -250,6 +257,27 @@ export interface Translations {
      workspaceCustom: string;
      previousPage: string;
      nextPage: string;
@@ -1564,7 +1638,7 @@ index bdf16c89805..dd34ad68dfe 100644
      roles: {
        user: string;
        assistant: string;
-@@ -376,6 +402,33 @@ export interface Translations {
+@@ -376,6 +404,33 @@ export interface Translations {
        needsHomeChannel?: string;
        noneConfigured?: string;
      };
@@ -1598,7 +1672,7 @@ index bdf16c89805..dd34ad68dfe 100644
    };
  
    // ── Plugins page ──
-@@ -433,6 +486,7 @@ export interface Translations {
+@@ -433,6 +488,7 @@ export interface Translations {
      catalogHint?: string;
      catalogSearchPlaceholder?: string;
      catalogEmpty?: string;
@@ -1606,7 +1680,7 @@ index bdf16c89805..dd34ad68dfe 100644
      catalogEmptyDocsLink?: string;
      catalogInstallBtn?: string;
      catalogInstalledBadge?: string;
-@@ -442,6 +496,93 @@ export interface Translations {
+@@ -442,6 +498,93 @@ export interface Translations {
      catalogConfirmInstallNote?: string;
      catalogRequiresEnv?: string;
      removedFromCatalog?: string;
@@ -1700,7 +1774,7 @@ index bdf16c89805..dd34ad68dfe 100644
    };
  
    // ── Profiles page ──
-@@ -538,6 +679,27 @@ export interface Translations {
+@@ -538,6 +681,27 @@ export interface Translations {
      profileSelector?: string;
      currentProfile?: string;
      managingProfile?: string;
@@ -1728,7 +1802,7 @@ index bdf16c89805..dd34ad68dfe 100644
    };
  
    // ── Config page ──
-@@ -798,6 +960,18 @@ export interface Translations {
+@@ -798,6 +962,18 @@ export interface Translations {
      allProfiles: string;
      showArchived: string;
      lanesByProfile: string;
@@ -1747,7 +1821,7 @@ index bdf16c89805..dd34ad68dfe 100644
      nudgeDispatcher: string;
      refresh: string;
      selected: string;
-@@ -892,6 +1066,7 @@ export interface Translations {
+@@ -892,6 +1068,7 @@ export interface Translations {
        ready: string;
        running: string;
        blocked: string;
@@ -1755,7 +1829,7 @@ index bdf16c89805..dd34ad68dfe 100644
        done: string;
        archived: string;
      };
-@@ -952,4 +1127,264 @@ export interface Translations {
+@@ -952,4 +1129,264 @@ export interface Translations {
        confirmManyTitle?: string;
      };
    };
@@ -2021,7 +2095,7 @@ index bdf16c89805..dd34ad68dfe 100644
 +  };
  }
 diff --git a/web/src/i18n/zh.ts b/web/src/i18n/zh.ts
-index 104612bcaf5..00618b7e235 100644
+index 104612bcaf5..ffe6742d443 100644
 --- a/web/src/i18n/zh.ts
 +++ b/web/src/i18n/zh.ts
 @@ -10,6 +10,7 @@ export const zh: Translations = {
@@ -2055,7 +2129,15 @@ index 104612bcaf5..00618b7e235 100644
      },
      modelToolsSheetSubtitle: "与工具",
      modelToolsSheetTitle: "模型",
-@@ -179,6 +185,26 @@ export const zh: Translations = {
+@@ -85,6 +91,7 @@ export const zh: Translations = {
+     openDocumentation: "在新标签页中打开文档",
+     openNavigation: "打开导航",
+     pluginNavSection: "插件",
++    coreNavSection: "常用",
+     sessionsActiveCount: "{count} 个活跃",
+     statusOverview: "状态概览",
+     system: "系统",
+@@ -179,6 +186,26 @@ export const zh: Translations = {
      workspaceCustom: "其他路径…",
      previousPage: "上一页",
      nextPage: "下一页",
@@ -2082,7 +2164,7 @@ index 104612bcaf5..00618b7e235 100644
      roles: {
        user: "用户",
        assistant: "助手",
-@@ -294,6 +320,32 @@ export const zh: Translations = {
+@@ -294,6 +321,32 @@ export const zh: Translations = {
        slack: "Slack",
        email: "邮件",
      },
@@ -2115,7 +2197,7 @@ index 104612bcaf5..00618b7e235 100644
    },
  
    profiles: {
-@@ -375,6 +427,111 @@ export const zh: Translations = {
+@@ -375,6 +428,111 @@ export const zh: Translations = {
      versionBadge: "版本",
      showInSidebar: "在侧边栏显示",
      hideFromSidebar: "从侧边栏隐藏",
@@ -2227,7 +2309,7 @@ index 104612bcaf5..00618b7e235 100644
    },
  
    skills: {
-@@ -386,6 +543,26 @@ export const zh: Translations = {
+@@ -386,6 +544,26 @@ export const zh: Translations = {
      filters: "筛选",
      noSkills: "未找到技能。技能从 ~/.hermes/skills/ 加载",
      noSkillsMatch: "没有匹配的技能。",
@@ -2254,7 +2336,7 @@ index 104612bcaf5..00618b7e235 100644
      skillCount: "{count} 个技能",
      resultCount: "{count} 个结果",
      noDescription: "暂无描述。",
-@@ -662,6 +839,15 @@ export const zh: Translations = {
+@@ -662,6 +840,15 @@ export const zh: Translations = {
      allProfiles: "全部配置",
      showArchived: "显示已归档",
      lanesByProfile: "按配置分组",
@@ -2270,7 +2352,7 @@ index 104612bcaf5..00618b7e235 100644
      nudgeDispatcher: "触发调度器",
      refresh: "刷新",
      selected: "已选中",
-@@ -757,6 +943,7 @@ export const zh: Translations = {
+@@ -757,6 +944,7 @@ export const zh: Translations = {
        ready: "就绪",
        running: "进行中",
        blocked: "阻塞",
@@ -2278,7 +2360,7 @@ index 104612bcaf5..00618b7e235 100644
        done: "已完成",
        archived: "已归档",
      },
-@@ -794,4 +981,283 @@ export const zh: Translations = {
+@@ -794,4 +982,283 @@ export const zh: Translations = {
      logTruncated: "（显示最后 100 KB — 完整日志位于 ",
      logAt: "）",
    },
