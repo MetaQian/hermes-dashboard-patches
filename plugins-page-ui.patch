@@ -1062,10 +1062,10 @@ index 104612bcaf5..2bc4ccc5e6e 100644
 +  },
  };
 diff --git a/web/src/index.css b/web/src/index.css
-index 7c4f39f9d40..8a63b07ef79 100644
+index 7c4f39f9d40..fe2a3bfdf06 100644
 --- a/web/src/index.css
 +++ b/web/src/index.css
-@@ -271,3 +271,112 @@ html[dir="rtl"] {
+@@ -271,3 +271,121 @@ html[dir="rtl"] {
    direction: rtl;
  }
  
@@ -1177,6 +1177,15 @@ index 7c4f39f9d40..8a63b07ef79 100644
 +   so the radius is invisible on them). */
 +span.font-compressed {
 +  border-radius: 9999px;
++}
++
++/* MCP page: the DS's global `code` chip (selection-highlight background,
++   `*::selection, code` in @nous-research/ui globals.css) is too heavy for
++   the endpoint URLs / commands in the server cards. Scoped to the page
++   root so every other page keeps the chip look. */
++[data-mcp-page] code {
++  background: transparent;
++  color: inherit;
 +}
 diff --git a/web/src/lib/api.ts b/web/src/lib/api.ts
 index 54e507d66fb..48a23da8dfb 100644
@@ -2721,7 +2730,7 @@ index afb1f9cf719..dcd7ecafb22 100644
              {t.env.addCustomKey}
            </Label>
 diff --git a/web/src/pages/McpPage.tsx b/web/src/pages/McpPage.tsx
-index 773479abbba..62a776f866e 100644
+index 773479abbba..c2b165ea770 100644
 --- a/web/src/pages/McpPage.tsx
 +++ b/web/src/pages/McpPage.tsx
 @@ -29,6 +29,8 @@ import {
@@ -2887,7 +2896,15 @@ index 773479abbba..62a776f866e 100644
  
    if (loading) {
      return (
-@@ -331,11 +332,12 @@ export default function McpPage() {
+@@ -324,18 +325,19 @@ export default function McpPage() {
+   });
+ 
+   return (
+-    <div className="flex flex-col gap-6">
++    <div data-mcp-page className="flex flex-col gap-6">
+       <Toast toast={toast} />
+ 
+       <DeleteConfirmDialog
          open={serverDelete.isOpen}
          onCancel={serverDelete.cancel}
          onConfirm={serverDelete.confirm}

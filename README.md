@@ -38,6 +38,8 @@ UI 库（`@nous-research/ui`）的 Card / Button / Input / Dialog / Switch 等�
 
 注意：这套规则依赖 Tailwind v4（utilities 在 `@layer` 里）+ UI 库的硬编码类名。上游若改了 Card 的类组合或 `data-slot`，需重新核对选择器。
 
+另外：DS 的 `globals.css` 会给**所有** `code` 元素加"选区高亮"底色（`*::selection, code { background: var(--selection-bg, …) }`，无层级，utility 类盖不住）。MCP 页卡片的端点 URL 因此带底色，已用 `[data-mcp-page] code { background: transparent; color: inherit }` 作用域到 MCP 页根节点（`data-mcp-page` 属性）覆盖；其余页面保留 chip 观感，要全站去掉就改成全局 `code` 规则。
+
 ## 环境前提
 
 - **Node.js ≥ 26**（hermes-agent 仓库 `engines` 硬性要求；Node 22 会报 `ERR_PNPM_UNSUPPORTED_ENGINE`）
