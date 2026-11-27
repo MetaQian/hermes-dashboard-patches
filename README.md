@@ -7,7 +7,7 @@
 
 | 补丁文件 | 说明 | 基础版本 | 涉及文件 |
 | --- | --- | --- | --- |
-| `patches/plugins-page-ui.patch` | 插件管理页 UI 改造（累计补丁，含 Tab 化 + 卡片化 + 圆角）：①「已安装 / 插件目录 / 从 GitHub 安装」三个标签页，已安装默认置顶，GitHub 安装独立表单 +「固定提交」输入框（完整 commit SHA 钉版，走后端 install 接口现成的 `ref` 参数）；②插件列表从"一行一个"改为响应式卡片网格（1/2/3 列自适应），卡片显示名称、版本、来源、状态徽标与两行描述摘要，点「查看详情」弹窗展示完整信息并可执行启用/停用、更新、显隐、移除等操作；③页面组件（卡片、按钮、输入框、标签页、下拉、开关、详情弹窗）统一柔和圆角 | `b579fe6a938`（v0.23.4+585） | `web/src/pages/PluginsPage.tsx`、`web/src/lib/api.ts`、`web/src/i18n/{types,en,zh}.ts`、`web/src/index.css` |
+| `patches/plugins-page-ui.patch` | dashboard 前端累计定制补丁（每次改动整体重新导出，`git apply --check -R` 校验过），当前含四块：①插件管理页 UI 改造（Tab 化 + 卡片网格 +「固定提交」钉版 + 详情弹窗）；②多页面中文化（定时任务 / MCP / Webhooks / 频道 / 技能 / 会话页，可选 i18n key + `?? "英文fallback"`，共享 `uiKit.ts` 的 `BADGE_CN` 徽标样式）；③会话列表修剪（`session-prune.ts`）；④**全站圆角**（见下节） | `b579fe6a938`（v0.23.4+585） | `web/src/index.css`、`web/src/i18n/{types,en,zh}.ts`、`web/src/lib/{api,session-prune}.ts`、`web/src/pages/{PluginsPage,PluginsPage_updateAll,AnalyticsPage,ChannelsPage,ChatPage,ConfigPage,CronPage,EnvPage,McpPage,ModelsPage,ProfileBuilderPage,SessionsPage,SkillsPage,WebhooksPage,uiKit}.tsx`（共 21 个文件） |
 
 ### plugins-page-ui 效果
 
@@ -19,6 +19,24 @@
 - 目录卡片能力标签（工具/钩子/中间件/环境变量）超出 3 个折叠为 `+N`，详情弹窗里看全量
 - 页面所有组件柔和圆角：卡片 `rounded-2xl`、按钮/输入 `rounded-lg`、标签页 `rounded-xl`、状态徽标/开关 `rounded-full`；UI 库 Select 自身不暴露圆角参数，在 `index.css` 用 `[data-plugins-page] .plugins-select` 作用域规则补上
 - 中英双语词条均已补齐（英文 fallback，无硬编码）
+
+### 全站圆角（所有页面）
+
+UI 库（`@nous-research/ui`）的 Card / Button / Input / Dialog / Switch 等组件**默认全部直角**，不读取主题圆角变量。插件页是圆角参考页（JSX 里逐处加了 `rounded-*`），其余页面靠 `index.css` 末尾一段**无层级（unlayered）CSS 规则**统一补齐——无层级规则在级联上压过 Tailwind 的 `@layer utilities` 和 UI 库硬编码类，一处生效全站：
+
+| 选择器 | 圆角 | 覆盖对象 |
+| --- | --- | --- |
+| `div.border-midground\/15.bg-background-base\/80` | 16px（rounded-2xl） | 所有 `<Card>`（该组合类全库只有 Card 原语带） |
+| `[data-slot='dialog-content']` | 16px | 所有弹窗（含各组件里的 Confirm/Picker 弹窗） |
+| `button` | 8px（rounded-lg） | 所有按钮；Switch 有更具体的规则保持 8px 轨道 |
+| `input`/`textarea`（排除 checkbox/radio） | 8px | 所有表单控件 |
+| `button[role='combobox']`、`[role='listbox']` | 8px | Select 触发器 + 下拉面板（插件页保留自己的 10px 作用域规则） |
+| `code`、`pre` | 8px | 代码 chip 与代码块 |
+| `span.font-compressed` | 9999px（胶囊） | 状态徽标（该压缩字体带边框的只有 Badge） |
+
+各页面里**非 Card 的卡片式 div**（列表行、统计条、错误条、QR 框、图表 tooltip、聊天气泡等）无法用统一选择器命中，已在 JSX 里逐处加了 `rounded-2xl`（面板/容器）、`rounded-xl`（列表行）、`rounded-lg`（错误/警告条、下拉、tooltip），涉及 11 个页面文件。
+
+注意：这套规则依赖 Tailwind v4（utilities 在 `@layer` 里）+ UI 库的硬编码类名。上游若改了 Card 的类组合或 `data-slot`，需重新核对选择器。
 
 ## 环境前提
 
@@ -84,7 +102,7 @@ pnpm --dir web run build
 git apply --3way patches/plugins-page-ui.patch
 ```
 
-仍冲突就人工解决（改动都集中在插件页：PluginsPage.tsx 的 Tab 条件渲染 + 卡片网格/详情弹窗、api.ts 的 `ref?: string` 字段、i18n 三个文件的可选词条、index.css 末尾一段 Select 圆角规则）。
+仍冲突就人工解决（改动集中在：PluginsPage.tsx 的 Tab 条件渲染 + 卡片网格/详情弹窗、api.ts 的 `ref?: string` 字段、i18n 三个文件的可选词条、index.css 末尾的 UI 库覆盖规则（Select/开关/Label/全站圆角）、以及各页面的中文化词条与卡片式 div 的 `rounded-*` 类）。
 
 ## 补丁约定
 
