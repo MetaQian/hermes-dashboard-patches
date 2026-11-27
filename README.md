@@ -7,7 +7,7 @@
 
 | 补丁文件 | 说明 | 基础版本 | 涉及文件 |
 | --- | --- | --- | --- |
-| `patches/plugins-page-ui.patch` | dashboard 前端累计定制补丁（每次改动整体重新导出，`git apply --check -R` 校验过），当前含四块：①插件管理页 UI 改造（Tab 化 + 卡片网格 +「固定提交」钉版 + 详情弹窗）；②多页面中文化（定时任务 / MCP / Webhooks / 频道 / 技能 / 会话页，可选 i18n key + `?? "英文fallback"`，共享 `uiKit.ts` 的 `BADGE_CN` 徽标样式）；③会话列表修剪（`session-prune.ts`）；④**全站圆角**（见下节） | `b579fe6a938`（v0.23.4+585） | `web/src/index.css`、`web/src/i18n/{types,en,zh}.ts`、`web/src/lib/{api,session-prune}.ts`、`web/src/pages/{PluginsPage,PluginsPage_updateAll,AnalyticsPage,ChannelsPage,ChatPage,ConfigPage,CronPage,EnvPage,McpPage,ModelsPage,ProfileBuilderPage,SessionsPage,SkillsPage,WebhooksPage,uiKit}.tsx`（共 21 个文件） |
+| `patches/plugins-page-ui.patch` | dashboard 前端累计定制补丁（每次改动整体重新导出，`git apply --check -R` 校验过），当前含七块：①插件管理页 UI 改造（Tab 化 + 卡片网格 +「固定提交」钉版 + 详情弹窗）；②多页面中文化（定时任务 / MCP / Webhooks / 频道 / 技能 / 会话页，可选 i18n key + `?? "英文fallback"`，共享 `uiKit.ts` 的 `BADGE_CN` 徽标样式）；③会话列表修剪（`session-prune.ts`）；④**全站圆角**（见下节）；⑤导航栏汉化（文件 / 频道 / Webhooks / 配对 / 系统 5 项 + 页面标题同步）；⑥**系统区移到顶部 banner 右侧**（见下节）；⑦代码 chip 去底色（MCP 页 + OAuth 提供商卡片） | `b579fe6a938`（v0.23.4+585） | `web/src/App.tsx`、`web/src/index.css`、`web/src/components/OAuthProvidersCard.tsx`、`web/src/contexts/PageHeaderProvider.tsx`、`web/src/i18n/{types,en,zh}.ts`、`web/src/lib/{api,session-prune,resolve-page-title}.ts`、`web/src/pages/{PluginsPage,PluginsPage_updateAll,AnalyticsPage,ChannelsPage,ChatPage,ConfigPage,CronPage,EnvPage,McpPage,ModelsPage,ProfileBuilderPage,SessionsPage,SkillsPage,WebhooksPage,uiKit}.tsx`（共 25 个文件） |
 
 ### plugins-page-ui 效果
 
@@ -38,7 +38,17 @@ UI 库（`@nous-research/ui`）的 Card / Button / Input / Dialog / Switch 等�
 
 注意：这套规则依赖 Tailwind v4（utilities 在 `@layer` 里）+ UI 库的硬编码类名。上游若改了 Card 的类组合或 `data-slot`，需重新核对选择器。
 
-另外：DS 的 `globals.css` 会给**所有** `code` 元素加"选区高亮"底色（`*::selection, code { background: var(--selection-bg, …) }`，无层级，utility 类盖不住）。MCP 页卡片的端点 URL 因此带底色，已用 `[data-mcp-page] code { background: transparent; color: inherit }` 作用域到 MCP 页根节点（`data-mcp-page` 属性）覆盖；其余页面保留 chip 观感，要全站去掉就改成全局 `code` 规则。
+另外：DS 的 `globals.css` 会给**所有** `code` 元素加"选区高亮"底色（`*::selection, code { background: var(--selection-bg, …) }`，无层级，utility 类盖不住）。MCP 页卡片的端点 URL、OAuth 提供商卡片的登录命令（cli_command）因此带底色，已分别用 `[data-mcp-page] code` 和 `[data-oauth-card] code` 作用域到两个页面/卡片根节点（`data-mcp-page`、`data-oauth-card` 属性）覆盖为透明底；其余页面保留 chip 观感，要全站去掉就改成全局 `code` 规则。
+
+### 系统区移到顶部 banner 右侧
+
+原来左侧导航栏下半部有一整块系统区（「系统」标题、网关状态 + 活跃会话数、重启网关 / 更新 Hermes 按钮、折叠态的网关小圆点）。现在整块移到了**每个页面顶部 banner 的最右侧**（`GatewayBannerActions`，挂在 `PageHeaderProvider` 新增的 `actions` prop 上，全路由通用）：
+
+- 状态胶囊：网关状态圆点（绿/黄/红）+「系统 运行中 · 活跃会话：N」，点击跳 /sessions；窄屏只留圆点
+- 重启网关 / 更新 Hermes 图标按钮（更新项仍只在 `can_update_hermes` 时出现），运行中显示转圈，确认弹窗逻辑与原侧边栏完全一致
+- 主题切换按钮原样搬入（显示当前主题名，下拉向下展开）
+- 侧边栏相应删掉了该区块和主题切换（语言切换、版本页脚保留在左侧）
+- 上游若新增/改名 banner（`role="banner"`）结构，需重新核对 `PageHeaderProvider` 的 `actions` 插槽位置
 
 ## 环境前提
 

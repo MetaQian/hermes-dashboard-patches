@@ -1,8 +1,25 @@
 diff --git a/web/src/App.tsx b/web/src/App.tsx
-index 0553271d4c7..dd670297c01 100644
+index 0553271d4c7..9f53b946103 100644
 --- a/web/src/App.tsx
 +++ b/web/src/App.tsx
-@@ -190,7 +190,7 @@ const BUILTIN_NAV_REST: NavItem[] = [
+@@ -17,6 +17,7 @@ import {
+   Route,
+   NavLink,
+   Navigate,
++  Link,
+   useLocation,
+   useNavigate,
+ } from "react-router";
+@@ -64,7 +65,7 @@ import { ConfirmDialog } from "@nous-research/ui/ui/components/confirm-dialog";
+ import { cn } from "@/lib/utils";
+ import { SidebarFooter } from "@/components/SidebarFooter";
+ import { CockpitSidebarSlot } from "@/components/CockpitSidebarSlot";
+-import { SidebarStatusStrip, gatewayLine } from "@/components/SidebarStatusStrip";
++import { gatewayLine } from "@/components/SidebarStatusStrip";
+ import { useBelowBreakpoint } from "@nous-research/ui/hooks/use-below-breakpoint";
+ import { useSidebarStatus } from "@/hooks/useSidebarStatus";
+ import { AuthWidget } from "@/components/AuthWidget";
+@@ -190,7 +191,7 @@ const BUILTIN_NAV_REST: NavItem[] = [
      label: "Sessions",
      icon: MessageSquare,
    },
@@ -11,7 +28,7 @@ index 0553271d4c7..dd670297c01 100644
    {
      path: "/analytics",
      labelKey: "analytics",
-@@ -208,13 +208,13 @@ const BUILTIN_NAV_REST: NavItem[] = [
+@@ -208,13 +209,13 @@ const BUILTIN_NAV_REST: NavItem[] = [
    { path: "/skills", labelKey: "skills", label: "Skills", icon: Package },
    { path: "/plugins", labelKey: "plugins", label: "Plugins", icon: Puzzle },
    { path: "/mcp", label: "MCP", icon: Plug },
@@ -29,6 +46,451 @@ index 0553271d4c7..dd670297c01 100644
    {
      path: "/docs",
      labelKey: "documentation",
+@@ -676,13 +677,6 @@ export default function App() {
+ 
+             <CockpitSidebarSlot layoutVariant={layoutVariant} />
+ 
+-            <SidebarSystemActions
+-              collapsed={isDesktopCollapsed}
+-              onNavigate={closeMobile}
+-              status={sidebarStatus}
+-              tooltipWarmRef={tooltipWarmRef}
+-            />
+-
+             <div
+               className={cn(
+                 "flex shrink-0 items-center gap-2",
+@@ -701,14 +695,6 @@ export default function App() {
+               >
+                 <PluginSlot name="header-right" />
+ 
+-                <SidebarIconWithTooltip
+-                  collapsed={isDesktopCollapsed}
+-                  label={t.theme?.switchTheme ?? "Switch theme"}
+-                  tooltipWarmRef={tooltipWarmRef}
+-                >
+-                  <ThemeSwitcher collapsed={isDesktopCollapsed} dropUp />
+-                </SidebarIconWithTooltip>
+-
+                 <SidebarIconWithTooltip
+                   collapsed={isDesktopCollapsed}
+                   label={t.language.switchTo}
+@@ -730,7 +716,10 @@ export default function App() {
+             </div>
+           </aside>
+ 
+-          <PageHeaderProvider pluginTabs={pluginTabMeta}>
++          <PageHeaderProvider
++            actions={<GatewayBannerActions status={sidebarStatus} />}
++            pluginTabs={pluginTabMeta}
++          >
+             <div
+               className={cn(
+                 "relative z-2 flex min-w-0 min-h-0 flex-1 flex-col",
+@@ -940,12 +929,11 @@ function SidebarPluginNav({
+   );
+ }
+ 
+-function SidebarSystemActions({
+-  collapsed,
+-  onNavigate,
+-  status,
+-  tooltipWarmRef,
+-}: SidebarSystemActionsProps) {
++/**
++ * System status + gateway actions, rendered in the top-right of the page
++ * banner (moved out of the left sidebar).
++ */
++function GatewayBannerActions({ status }: { status: StatusResponse | null }) {
+   const { t } = useI18n();
+   const navigate = useNavigate();
+   const { activeAction, isBusy, isRunning, pendingAction, runAction } =
+@@ -1026,64 +1014,95 @@ function SidebarSystemActions({
+     }
+     void runAction(action);
+     navigate("/sessions");
+-    onNavigate();
+   };
+ 
+   const confirmRestart = () => {
+     setRestartConfirmOpen(false);
+     void runAction("restart");
+     navigate("/sessions");
+-    onNavigate();
+   };
+ 
+   const confirmUpdate = () => {
+     setUpdateConfirmOpen(false);
+     void runAction("update");
+     navigate("/sessions");
+-    onNavigate();
++  };
++
++  const gw = status ? gatewayLine(status, t) : null;
++  const toneDot: Record<string, string> = {
++    "text-success": "bg-success",
++    "text-warning": "bg-warning",
++    "text-destructive": "bg-destructive",
++    "text-muted-foreground": "bg-muted-foreground",
+   };
+ 
+   return (
+     <>
+-    <div
+-      className={cn(
+-        "shrink-0 flex flex-col",
+-        "border-t border-current/10",
+-        "py-1",
+-      )}
+-    >
+-      <span
+-        className={cn(
+-          "px-5 pt-0.5 pb-0.5",
+-          "font-sans text-display text-xs tracking-[0.12em] text-text-tertiary",
+-          collapsed && "lg:hidden",
+-        )}
+-      >
+-        {t.app.system}
+-      </span>
++      <div className="flex items-center gap-1.5">
++        <Link
++          to="/sessions"
++          title={t.app.statusOverview}
++          className={cn(
++            "flex shrink-0 items-center gap-2",
++            "rounded-lg px-2 py-1.5",
++            "text-text-secondary transition-colors hover:text-midground",
++            "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-midground/40",
++          )}
++        >
++          <span
++            aria-hidden
++            className={cn(
++              "h-2 w-2 shrink-0 rounded-full",
++              gw ? (toneDot[gw.tone] ?? "bg-muted-foreground") : "bg-midground/20",
++            )}
++          />
++          <span className="hidden items-center gap-1.5 whitespace-nowrap text-xs sm:flex">
++            <span className="text-text-tertiary">{t.app.system}</span>
++            <span className={cn("font-medium", gw?.tone)}>
++              {gw ? gw.label : t.common.loading}
++            </span>
++            <span className="text-text-tertiary">·</span>
++            <span className="text-text-tertiary">{t.app.activeSessionsLabel}</span>
++            <span className="tabular-nums">{status?.active_sessions ?? "—"}</span>
++          </span>
++        </Link>
++
++        {items.map((item) => {
++          const Icon = item.icon;
++          const isPending = pendingAction === item.action;
++          const isActionRunning =
++            activeAction === item.action && isRunning && !isPending;
++          const busy = isPending || isActionRunning;
++          const label = isActionRunning ? item.runningLabel : item.label;
++          return (
++            <Button
++              key={item.action}
++              ghost
++              size="icon"
++              className="text-text-secondary hover:text-midground"
++              disabled={isBusy && !busy}
++              title={label}
++              aria-label={label}
++              aria-busy={busy}
++              onClick={() => handleClick(item.action)}
++            >
++              {busy ? (
++                <Spinner className="h-4 w-4" />
++              ) : (
++                <Icon
++                  className={cn(
++                    "h-4 w-4",
++                    isActionRunning && !item.spin && "animate-pulse",
++                  )}
++                />
++              )}
++            </Button>
++          );
++        })}
+ 
+-      <div className={cn(collapsed && "lg:hidden")}>
+-        <SidebarStatusStrip status={status} />
++        <ThemeSwitcher />
+       </div>
+ 
+-      <GatewayDot collapsed={collapsed} status={status} tooltipWarmRef={tooltipWarmRef} />
+-
+-      <ul className="flex flex-col">
+-        {items.map((item) => (
+-          <SystemActionButton
+-            key={item.action}
+-            collapsed={collapsed}
+-            disabled={isBusy && !(pendingAction === item.action || (activeAction === item.action && isRunning))}
+-            tooltipWarmRef={tooltipWarmRef}
+-            isPending={pendingAction === item.action}
+-            isRunning={activeAction === item.action && isRunning && pendingAction !== item.action}
+-            item={item}
+-            onClick={() => handleClick(item.action)}
+-          />
+-        ))}
+-      </ul>
+-    </div>
+-
+     <ConfirmDialog
+       cancelLabel={t.common.cancel}
+       confirmLabel={sharedGateway ? "Restart all" : t.status.restartGateway}
+@@ -1120,94 +1139,6 @@ function SidebarSystemActions({
+   );
+ }
+ 
+-function SystemActionButton({
+-  collapsed,
+-  disabled,
+-  isPending,
+-  isRunning: isActionRunning,
+-  item,
+-  onClick,
+-  tooltipWarmRef,
+-}: SystemActionButtonProps) {
+-  const { icon: Icon, label, runningLabel, spin } = item;
+-  const [hovered, setHovered] = useState(false);
+-  const [tooltipAnchor, setTooltipAnchor] = useState<HTMLElement | null>(null);
+-  const busy = isPending || isActionRunning;
+-  const displayLabel = isActionRunning ? runningLabel : label;
+-  const showTooltip = (event: MouseEvent<HTMLElement> | FocusEvent<HTMLElement>) => {
+-    setHovered(true);
+-    setTooltipAnchor(event.currentTarget);
+-  };
+-  const hideTooltip = () => {
+-    setHovered(false);
+-    setTooltipAnchor(null);
+-  };
+-
+-  return (
+-    <li
+-      onMouseEnter={collapsed ? showTooltip : undefined}
+-      onMouseLeave={collapsed ? hideTooltip : undefined}
+-    >
+-      <button
+-        onClick={onClick}
+-        disabled={disabled}
+-        aria-busy={busy}
+-        aria-label={collapsed ? displayLabel : undefined}
+-        onFocus={collapsed ? showTooltip : undefined}
+-        onBlur={collapsed ? hideTooltip : undefined}
+-        type="button"
+-        className={cn(
+-          "group/action relative flex w-full items-center gap-3",
+-          "px-5 py-2.5",
+-          "font-sans text-display text-xs tracking-[0.1em]",
+-          "whitespace-nowrap transition-colors cursor-pointer",
+-          "focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-midground",
+-          busy
+-            ? "text-midground"
+-            : "text-text-secondary hover:text-midground",
+-          "disabled:text-text-disabled disabled:cursor-not-allowed",
+-        )}
+-      >
+-        {isPending ? (
+-          <Spinner className="shrink-0 text-[0.875rem]" />
+-        ) : isActionRunning && spin ? (
+-          <Spinner className="shrink-0 text-[0.875rem]" />
+-        ) : (
+-          <Icon
+-            className={cn(
+-              "h-3.5 w-3.5 shrink-0",
+-              isActionRunning && !spin && "animate-pulse",
+-            )}
+-          />
+-        )}
+-
+-        <span className={cn(
+-          "truncate transition-opacity duration-300",
+-          collapsed ? "lg:opacity-0" : "lg:opacity-100",
+-        )}>
+-          {displayLabel}
+-        </span>
+-
+-        <span
+-          aria-hidden
+-          className="absolute inset-y-0.5 left-1.5 right-1.5 bg-midground opacity-0 pointer-events-none transition-opacity duration-200 group-hover/action:opacity-5"
+-        />
+-
+-        {busy && (
+-          <span
+-            aria-hidden
+-            className="absolute left-0 top-0 bottom-0 w-px bg-midground"
+-          />
+-        )}
+-      </button>
+-
+-      {collapsed && hovered && tooltipAnchor && (
+-        <SidebarTooltip anchor={tooltipAnchor} label={displayLabel} warmRef={tooltipWarmRef} />
+-      )}
+-    </li>
+-  );
+-}
+-
+ function SidebarIconWithTooltip({
+   children,
+   collapsed,
+@@ -1250,64 +1181,6 @@ function SidebarIconWithTooltip({
+   );
+ }
+ 
+-function GatewayDot({ collapsed, status, tooltipWarmRef }: GatewayDotProps) {
+-  const { t } = useI18n();
+-  const [hovered, setHovered] = useState(false);
+-  const [tooltipAnchor, setTooltipAnchor] = useState<HTMLElement | null>(null);
+-
+-  const toneToColor: Record<string, string> = {
+-    "text-success": "bg-success",
+-    "text-warning": "bg-warning",
+-    "text-destructive": "bg-destructive",
+-    "text-muted-foreground": "bg-muted-foreground",
+-  };
+-
+-  let color: string;
+-  let label: string;
+-
+-  if (!status) {
+-    color = "bg-midground/20";
+-    label = t.status.gateway;
+-  } else {
+-    const gw = gatewayLine(status, t);
+-    color = toneToColor[gw.tone] ?? "bg-muted-foreground";
+-    label = `${t.status.gateway} ${gw.label}`;
+-  }
+-  const showTooltip = (event: MouseEvent<HTMLDivElement> | FocusEvent<HTMLDivElement>) => {
+-    setHovered(true);
+-    setTooltipAnchor(event.currentTarget);
+-  };
+-  const hideTooltip = () => {
+-    setHovered(false);
+-    setTooltipAnchor(null);
+-  };
+-
+-  return (
+-    <div
+-      className={cn(
+-        "hidden lg:flex py-3 pl-[1.625rem] transition-opacity duration-300",
+-        collapsed ? "lg:opacity-100" : "lg:opacity-0 lg:h-0 lg:py-0 lg:overflow-hidden",
+-      )}
+-      role="status"
+-      aria-label={label}
+-      tabIndex={collapsed ? 0 : -1}
+-      onMouseEnter={collapsed ? showTooltip : undefined}
+-      onMouseLeave={collapsed ? hideTooltip : undefined}
+-      onFocus={collapsed ? showTooltip : undefined}
+-      onBlur={collapsed ? hideTooltip : undefined}
+-    >
+-      <span
+-        aria-hidden
+-        className={cn("h-1.5 w-1.5 rounded-full", color)}
+-      />
+-
+-      {hovered && tooltipAnchor && (
+-        <SidebarTooltip anchor={tooltipAnchor} label={label} warmRef={tooltipWarmRef} />
+-      )}
+-    </div>
+-  );
+-}
+-
+ function SidebarTooltip({ anchor, label, warmRef }: SidebarTooltipProps) {
+   const rect = anchor.getBoundingClientRect();
+   const sidebar = document.getElementById("app-sidebar");
+@@ -1351,12 +1224,6 @@ function SidebarTooltip({ anchor, label, warmRef }: SidebarTooltipProps) {
+ 
+ type TooltipWarmRef = React.RefObject<number>;
+ 
+-interface GatewayDotProps {
+-  collapsed: boolean;
+-  status: StatusResponse | null;
+-  tooltipWarmRef: TooltipWarmRef;
+-}
+-
+ interface NavItem {
+   icon: ComponentType<{ className?: string }>;
+   label: string;
+@@ -1379,29 +1246,12 @@ interface SidebarNavLinkProps {
+   tooltipWarmRef: TooltipWarmRef;
+ }
+ 
+-interface SidebarSystemActionsProps {
+-  collapsed: boolean;
+-  onNavigate: () => void;
+-  status: StatusResponse | null;
+-  tooltipWarmRef: TooltipWarmRef;
+-}
+-
+ interface SidebarTooltipProps {
+   anchor: HTMLElement;
+   label: string;
+   warmRef?: TooltipWarmRef;
+ }
+ 
+-interface SystemActionButtonProps {
+-  collapsed: boolean;
+-  disabled: boolean;
+-  isPending: boolean;
+-  isRunning: boolean;
+-  item: SystemActionItem;
+-  onClick: () => void;
+-  tooltipWarmRef: TooltipWarmRef;
+-}
+-
+ interface SystemActionItem {
+   action: SystemAction;
+   icon: ComponentType<{ className?: string }>;
+diff --git a/web/src/components/OAuthProvidersCard.tsx b/web/src/components/OAuthProvidersCard.tsx
+index db19636ebdc..927ab34ac07 100644
+--- a/web/src/components/OAuthProvidersCard.tsx
++++ b/web/src/components/OAuthProvidersCard.tsx
+@@ -94,7 +94,7 @@ export function OAuthProvidersCard({ onError, onSuccess }: Props) {
+   const totalCount = providers?.length ?? 0;
+ 
+   return (
+-    <Card>
++    <Card data-oauth-card>
+       <CardHeader>
+         <div className="flex items-center justify-between">
+           <div className="flex items-center gap-2">
+diff --git a/web/src/contexts/PageHeaderProvider.tsx b/web/src/contexts/PageHeaderProvider.tsx
+index 3cb6ffebfc7..ad22507b730 100644
+--- a/web/src/contexts/PageHeaderProvider.tsx
++++ b/web/src/contexts/PageHeaderProvider.tsx
+@@ -8,9 +8,12 @@ import { useI18n } from "@/i18n";
+ export function PageHeaderProvider({
+   children,
+   pluginTabs,
++  actions,
+ }: {
+   children: ReactNode;
+   pluginTabs: { path: string; label: string }[];
++  /** Global right-side cluster, always pinned to the banner's right edge. */
++  actions?: ReactNode;
+ }) {
+   const { pathname } = useLocation();
+   const { t } = useI18n();
+@@ -117,6 +120,17 @@ export function PageHeaderProvider({
+                 {end}
+               </div>
+             ) : null}
++
++            {actions ? (
++              <div
++                className={cn(
++                  "flex shrink-0 items-center",
++                  isChatRoute ? "w-auto justify-end" : "w-full justify-end",
++                )}
++              >
++                {actions}
++              </div>
++            ) : null}
+           </div>
+         </header>
+ 
 diff --git a/web/src/i18n/en.ts b/web/src/i18n/en.ts
 index f6f04b06fd2..4c7355f1190 100644
 --- a/web/src/i18n/en.ts
@@ -1162,10 +1624,10 @@ index 104612bcaf5..0221f00ad12 100644
 +  },
  };
 diff --git a/web/src/index.css b/web/src/index.css
-index 7c4f39f9d40..fe2a3bfdf06 100644
+index 7c4f39f9d40..69725c4ed01 100644
 --- a/web/src/index.css
 +++ b/web/src/index.css
-@@ -271,3 +271,121 @@ html[dir="rtl"] {
+@@ -271,3 +271,127 @@ html[dir="rtl"] {
    direction: rtl;
  }
  
@@ -1284,6 +1746,12 @@ index 7c4f39f9d40..fe2a3bfdf06 100644
 +   the endpoint URLs / commands in the server cards. Scoped to the page
 +   root so every other page keeps the chip look. */
 +[data-mcp-page] code {
++  background: transparent;
++  color: inherit;
++}
++
++/* Same DS rule hits the OAuth provider card's cli-command chips — drop them there too. */
++[data-oauth-card] code {
 +  background: transparent;
 +  color: inherit;
 +}
