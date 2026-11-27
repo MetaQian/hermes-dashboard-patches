@@ -1,8 +1,62 @@
+diff --git a/web/src/App.tsx b/web/src/App.tsx
+index 0553271d4c7..dd670297c01 100644
+--- a/web/src/App.tsx
++++ b/web/src/App.tsx
+@@ -190,7 +190,7 @@ const BUILTIN_NAV_REST: NavItem[] = [
+     label: "Sessions",
+     icon: MessageSquare,
+   },
+-  { path: "/files", label: "Files", icon: FolderOpen },
++  { path: "/files", labelKey: "files", label: "Files", icon: FolderOpen },
+   {
+     path: "/analytics",
+     labelKey: "analytics",
+@@ -208,13 +208,13 @@ const BUILTIN_NAV_REST: NavItem[] = [
+   { path: "/skills", labelKey: "skills", label: "Skills", icon: Package },
+   { path: "/plugins", labelKey: "plugins", label: "Plugins", icon: Puzzle },
+   { path: "/mcp", label: "MCP", icon: Plug },
+-  { path: "/channels", label: "Channels", icon: Radio },
+-  { path: "/webhooks", label: "Webhooks", icon: Webhook },
+-  { path: "/pairing", label: "Pairing", icon: ShieldCheck },
++  { path: "/channels", labelKey: "channels", label: "Channels", icon: Radio },
++  { path: "/webhooks", labelKey: "webhooks", label: "Webhooks", icon: Webhook },
++  { path: "/pairing", labelKey: "pairing", label: "Pairing", icon: ShieldCheck },
+   { path: "/profiles", labelKey: "profiles", label: "Profiles", icon: Users },
+   { path: "/config", labelKey: "config", label: "Config", icon: Settings },
+   { path: "/env", labelKey: "keys", label: "Keys", icon: KeyRound },
+-  { path: "/system", label: "System", icon: Wrench },
++  { path: "/system", labelKey: "system", label: "System", icon: Wrench },
+   {
+     path: "/docs",
+     labelKey: "documentation",
 diff --git a/web/src/i18n/en.ts b/web/src/i18n/en.ts
-index f6f04b06fd2..d384ed125b2 100644
+index f6f04b06fd2..4c7355f1190 100644
 --- a/web/src/i18n/en.ts
 +++ b/web/src/i18n/en.ts
-@@ -494,6 +494,7 @@ export const en: Translations = {
+@@ -75,17 +75,22 @@ export const en: Translations = {
+     },
+     nav: {
+       analytics: "Analytics",
++      channels: "Channels",
+       chat: "Chat",
+       config: "Config",
+       cron: "Cron",
+       documentation: "Documentation",
++      files: "Files",
+       keys: "Keys",
+       logs: "Logs",
+       models: "Models",
++      pairing: "Pairing",
+       profiles: "Profiles",
+       plugins: "Plugins",
+       sessions: "Sessions",
+       skills: "Skills",
++      system: "System",
++      webhooks: "Webhooks",
+     },
+     modelToolsSheetSubtitle: "& tools",
+     modelToolsSheetTitle: "Model",
+@@ -494,6 +499,7 @@ export const en: Translations = {
        "Curated, Nous-reviewed plugins pinned to exact commits. Install from here for supply-chain-safe versions.",
      catalogSearchPlaceholder: "Search catalog...",
      catalogEmpty: "No catalog entries match.",
@@ -10,7 +64,7 @@ index f6f04b06fd2..d384ed125b2 100644
      catalogEmptyDocsLink: "Learn about Hermes plugins",
      catalogInstallBtn: "Install",
      catalogInstalledBadge: "Installed ✓",
-@@ -504,6 +505,94 @@ export const en: Translations = {
+@@ -504,6 +510,94 @@ export const en: Translations = {
        "Plugins install disabled; enable it after install to activate.",
      catalogRequiresEnv: "Requires env",
      removedFromCatalog: "Removed from catalog",
@@ -106,10 +160,33 @@ index f6f04b06fd2..d384ed125b2 100644
  
    skills: {
 diff --git a/web/src/i18n/types.ts b/web/src/i18n/types.ts
-index bdf16c89805..fe863e49a4d 100644
+index bdf16c89805..10db8063b82 100644
 --- a/web/src/i18n/types.ts
 +++ b/web/src/i18n/types.ts
-@@ -250,6 +250,27 @@ export interface Translations {
+@@ -94,17 +94,22 @@ export interface Translations {
+     };
+     nav: {
+       analytics: string;
++      channels?: string;
+       chat: string;
+       config: string;
+       cron: string;
+       documentation: string;
++      files?: string;
+       keys: string;
+       logs: string;
+       models: string;
++      pairing?: string;
+       profiles: string;
+       plugins: string;
+       sessions: string;
+       skills: string;
++      system?: string;
++      webhooks?: string;
+     };
+     modelToolsSheetSubtitle: string;
+     modelToolsSheetTitle: string;
+@@ -250,6 +255,27 @@ export interface Translations {
      workspaceCustom: string;
      previousPage: string;
      nextPage: string;
@@ -137,7 +214,7 @@ index bdf16c89805..fe863e49a4d 100644
      roles: {
        user: string;
        assistant: string;
-@@ -376,6 +397,33 @@ export interface Translations {
+@@ -376,6 +402,33 @@ export interface Translations {
        needsHomeChannel?: string;
        noneConfigured?: string;
      };
@@ -171,7 +248,7 @@ index bdf16c89805..fe863e49a4d 100644
    };
  
    // ── Plugins page ──
-@@ -433,6 +481,7 @@ export interface Translations {
+@@ -433,6 +486,7 @@ export interface Translations {
      catalogHint?: string;
      catalogSearchPlaceholder?: string;
      catalogEmpty?: string;
@@ -179,7 +256,7 @@ index bdf16c89805..fe863e49a4d 100644
      catalogEmptyDocsLink?: string;
      catalogInstallBtn?: string;
      catalogInstalledBadge?: string;
-@@ -442,6 +491,93 @@ export interface Translations {
+@@ -442,6 +496,93 @@ export interface Translations {
      catalogConfirmInstallNote?: string;
      catalogRequiresEnv?: string;
      removedFromCatalog?: string;
@@ -273,7 +350,7 @@ index bdf16c89805..fe863e49a4d 100644
    };
  
    // ── Profiles page ──
-@@ -538,6 +674,27 @@ export interface Translations {
+@@ -538,6 +679,27 @@ export interface Translations {
      profileSelector?: string;
      currentProfile?: string;
      managingProfile?: string;
@@ -301,7 +378,7 @@ index bdf16c89805..fe863e49a4d 100644
    };
  
    // ── Config page ──
-@@ -952,4 +1109,264 @@ export interface Translations {
+@@ -952,4 +1114,264 @@ export interface Translations {
        confirmManyTitle?: string;
      };
    };
@@ -567,7 +644,7 @@ index bdf16c89805..fe863e49a4d 100644
 +  };
  }
 diff --git a/web/src/i18n/zh.ts b/web/src/i18n/zh.ts
-index 104612bcaf5..2bc4ccc5e6e 100644
+index 104612bcaf5..0221f00ad12 100644
 --- a/web/src/i18n/zh.ts
 +++ b/web/src/i18n/zh.ts
 @@ -10,6 +10,7 @@ export const zh: Translations = {
@@ -578,7 +655,30 @@ index 104612bcaf5..2bc4ccc5e6e 100644
      search: "搜索...",
      loading: "加载中...",
      create: "创建",
-@@ -179,6 +180,26 @@ export const zh: Translations = {
+@@ -67,17 +68,22 @@ export const zh: Translations = {
+     },
+     nav: {
+       analytics: "分析",
++      channels: "频道",
+       chat: "对话",
+       config: "配置",
+       cron: "定时任务",
+       documentation: "文档",
++      files: "文件",
+       keys: "密钥",
+       logs: "日志",
+       models: "模型",
++      pairing: "配对",
+       profiles: "多Agent配置",
+       plugins: "插件管理",
+       sessions: "会话",
+       skills: "技能",
++      system: "系统",
++      webhooks: "Webhooks",
+     },
+     modelToolsSheetSubtitle: "与工具",
+     modelToolsSheetTitle: "模型",
+@@ -179,6 +185,26 @@ export const zh: Translations = {
      workspaceCustom: "其他路径…",
      previousPage: "上一页",
      nextPage: "下一页",
@@ -605,7 +705,7 @@ index 104612bcaf5..2bc4ccc5e6e 100644
      roles: {
        user: "用户",
        assistant: "助手",
-@@ -294,6 +315,32 @@ export const zh: Translations = {
+@@ -294,6 +320,32 @@ export const zh: Translations = {
        slack: "Slack",
        email: "邮件",
      },
@@ -638,7 +738,7 @@ index 104612bcaf5..2bc4ccc5e6e 100644
    },
  
    profiles: {
-@@ -375,6 +422,111 @@ export const zh: Translations = {
+@@ -375,6 +427,111 @@ export const zh: Translations = {
      versionBadge: "版本",
      showInSidebar: "在侧边栏显示",
      hideFromSidebar: "从侧边栏隐藏",
@@ -750,7 +850,7 @@ index 104612bcaf5..2bc4ccc5e6e 100644
    },
  
    skills: {
-@@ -386,6 +538,26 @@ export const zh: Translations = {
+@@ -386,6 +543,26 @@ export const zh: Translations = {
      filters: "筛选",
      noSkills: "未找到技能。技能从 ~/.hermes/skills/ 加载",
      noSkillsMatch: "没有匹配的技能。",
@@ -777,7 +877,7 @@ index 104612bcaf5..2bc4ccc5e6e 100644
      skillCount: "{count} 个技能",
      resultCount: "{count} 个结果",
      noDescription: "暂无描述。",
-@@ -794,4 +966,283 @@ export const zh: Translations = {
+@@ -794,4 +971,283 @@ export const zh: Translations = {
      logTruncated: "（显示最后 100 KB — 完整日志位于 ",
      logAt: "）",
    },
@@ -1200,6 +1300,40 @@ index 54e507d66fb..48a23da8dfb 100644
  }
  
  export interface AgentPluginInstallResponse {
+diff --git a/web/src/lib/resolve-page-title.ts b/web/src/lib/resolve-page-title.ts
+index 15fa5b3824e..605ff739b25 100644
+--- a/web/src/lib/resolve-page-title.ts
++++ b/web/src/lib/resolve-page-title.ts
+@@ -13,11 +13,17 @@ const BUILTIN: Record<string, keyof Translations["app"]["nav"]> = {
+   "/config": "config",
+   "/env": "keys",
+   "/docs": "documentation",
++  "/files": "files",
++  "/channels": "channels",
++  "/webhooks": "webhooks",
++  "/pairing": "pairing",
++  "/system": "system",
+ };
+ 
+-// Built-in routes without an i18n nav key. Keep these in sync with the
+-// sidebar labels in App.tsx — the naive capitalize fallback below mangles
+-// initialisms ("/mcp" → "Mcp") and can't match multi-word labels.
++// Fallback titles: /mcp has no nav key at all; the optional-key routes fall
++// back to these literals in locales that don't translate them. Keep in sync
++// with the sidebar labels in App.tsx — the naive capitalize fallback below
++// mangles initialisms ("/mcp" → "Mcp") and can't match multi-word labels.
+ const BUILTIN_LITERAL: Record<string, string> = {
+   "/files": "Files",
+   "/mcp": "MCP",
+@@ -42,7 +48,7 @@ export function resolvePageTitle(
+   }
+   const key = BUILTIN[normalized];
+   if (key) {
+-    return t.app.nav[key];
++    return t.app.nav[key] ?? BUILTIN_LITERAL[normalized] ?? "";
+   }
+   const literal = BUILTIN_LITERAL[normalized];
+   if (literal) {
 diff --git a/web/src/lib/session-prune.ts b/web/src/lib/session-prune.ts
 index 5d45139c375..9873fa10d53 100644
 --- a/web/src/lib/session-prune.ts
